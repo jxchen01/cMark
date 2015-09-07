@@ -22,7 +22,7 @@
 
 % Edit the above text to modify the response to help seg_remedy
 
-% Last Modified by GUIDE v2.5 16-Aug-2015 07:14:04
+% Last Modified by GUIDE v2.5 07-Sep-2015 00:53:56
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -66,7 +66,7 @@ set(handles.slider, 'SliderStep', [SliderStepX 1]);
 guidata(hObject, handles);
 
 % UIWAIT makes seg_remedy wait for user response (see UIRESUME)
-% uiwait(handles.axes1);
+% uiwait(handles.Fig_raw);
 
 
 
@@ -124,7 +124,7 @@ else
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%% visualization and trigger mouse gesture %%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    axes(handles.axes2);
+    axes(handles.Fig_seg);
     imshow(matEachFrame{1,1},handles.cmap);
     set(gca,'NextPlot','add');
     freezeColors;
@@ -133,7 +133,7 @@ else
     set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
     set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});
     
-    axes(handles.axes1);
+    axes(handles.Fig_raw);
     imshow(rawEachFrame{1,1});
 end
 
@@ -173,7 +173,7 @@ else
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%% update the visualization %%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    axes(handles.axes2);
+    axes(handles.Fig_seg);
     set(gca,'NextPlot','add');
     imshow(handles.matEachFrame{1,handles.counter},handles.cmap); 
     freezeColors;
@@ -182,7 +182,7 @@ else
     set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
     set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});
     
-    axes(handles.axes1);
+    axes(handles.Fig_raw);
     imshow(handles.rawEachFrame{1,handles.counter});
 end
 
@@ -223,7 +223,7 @@ end
      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      %%%%%%%%%%%%%%%% update the visualization %%%%%%%%%%%%%%%%%%
      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-     axes(handles.axes2);
+     axes(handles.Fig_seg);
      set(gca,'NextPlot','add');
      imshow(handles.matEachFrame{1,handles.counter},handles.cmap);
      freezeColors;
@@ -232,13 +232,13 @@ end
      set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
      set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});   
      
-     axes(handles.axes1);
+     axes(handles.Fig_raw);
      imshow(handles.rawEachFrame{1,handles.counter});
  end
 
 % --- Executes during object creation, after setting all properties.
-function axes2_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to axes2 (see GCBO)
+function Fig_seg_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Fig_seg (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 global Mflag Aflag Fflag Sflag Dflag Saveflag;
@@ -256,7 +256,7 @@ guidata(hObject, handles);
 % --- Executes on mouse press over figure background, over a disabled or
 % --- inactive control, or over an axes background.
 function figure2_WindowButtonDownFcn(hObject, eventdata, handles)
-% hObject    handle to axes2 (see GCBO)
+% hObject    handle to Fig_seg (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 global Mflag x0 y0 x y Dflag Sflag value Fflag Aflag;
@@ -264,7 +264,7 @@ global Mflag x0 y0 x y Dflag Sflag value Fflag Aflag;
 % retrieve the lastest handles 
 handles = guidata(hObject);
 
-cp = get(handles.axes2, 'CurrentPoint');
+cp = get(handles.Fig_seg, 'CurrentPoint');
 x = round(cp(1,1));
 y = round(cp(1,2));
 
@@ -289,18 +289,16 @@ if(x>=1 && y>=1 && x<=handles.ydim && y<=handles.xdim) % notice that x-y is reve
         temp1=get(handles.Add,'Value');
         temp2=get(handles.Fix,'Value');
         
-        if Aflag || Fflag
-            if temp1==get(handles.Add,'Max')&&temp2==get(handles.Fix,'Min') % add new
-                Color = handles.cmap(handles.m+1,:);
-                plot(handles.axes2, x, y, 'Color', Color);
-                drawnow
-            elseif temp1==get(handles.Add,'Min')&&temp2==get(handles.Fix,'Max') % fix old
-                Color = handles.cmap(value,:);
-                plot(handles.axes2, x, y, 'Color', Color);
-                drawnow
-            end    
+        if Aflag
+            Color = handles.cmap(handles.m+1,:);
+            plot(handles.Fig_seg, x, y, 'Color', Color);
+            drawnow
+        elseif Fflag         
+            Color = handles.cmap(value,:);
+            plot(handles.Fig_seg, x, y, 'Color', Color);
+            drawnow   
         elseif Dflag || Sflag
-            plot(handles.axes2, x, y, 'Color', [0,0,0]);
+            plot(handles.Fig_seg, x, y, 'Color', [0,0,0]);
             drawnow;
         end
     end
@@ -314,7 +312,7 @@ end
 
 % --- Executes on mouse motion over figure - except title and menu.
 function figure2_WindowButtonMotionFcn(hObject, eventdata, handles)
-% hObject    handle to axes2 (see GCBO)
+% hObject    handle to Fig_seg (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 global Mflag x0 y0 x y Aflag Fflag Dflag Sflag value Saveflag; 
@@ -332,7 +330,7 @@ if Mflag
     handles = guidata(hObject);
     m=handles.m;
     
-    cp = get(handles.axes2, 'CurrentPoint');
+    cp = get(handles.Fig_seg, 'CurrentPoint');
     x = round(cp(1,1));
     y = round(cp(1,2));
     
@@ -357,24 +355,19 @@ if Mflag
         
         guidata(hObject, handles);
         
-        if Aflag || Fflag
-            
-            handles = guidata(hObject);
-            
-            if temp1==get(handles.Add,'Max')&&temp2==get(handles.Fix,'Min')
-                Saveflag = 0;
-                Color = handles.cmap(m+1,:);
-                plot(handles.axes2, [x0 x], [y0 y], 'LineWidth', LineWidthPlot, 'Color', Color);
-                drawnow;
-            elseif temp1==get(handles.Add,'Min')&&temp2==get(handles.Fix,'Max')
-                Saveflag = 0;
-                Color = handles.cmap(value,:);
-                plot(handles.axes2, [x0 x], [y0 y], 'LineWidth', LineWidthPlot, 'Color', Color);
-                drawnow;
-            end
+        if Aflag
+            Saveflag = 0;
+            Color = handles.cmap(m+1,:);
+            plot(handles.Fig_seg, [x0 x], [y0 y], 'LineWidth', LineWidthPlot, 'Color', Color);
+            drawnow;
+        elseif Fflag
+            Saveflag = 0;
+            Color = handles.cmap(value,:);
+            plot(handles.Fig_seg, [x0 x], [y0 y], 'LineWidth', LineWidthPlot, 'Color', Color);
+            drawnow;         
         elseif Dflag || Sflag
             Saveflag = 0;
-            plot(handles.axes2, [x0 x], [y0 y], 'LineWidth', LineWidthPlot, 'Color', [0,0,0]);
+            plot(handles.Fig_seg, [x0 x], [y0 y], 'LineWidth', LineWidthPlot, 'Color', [0,0,0]);
             drawnow;
         end
         handles.NImg = handles.NImg | NImg;
@@ -387,7 +380,7 @@ end
 % --- Executes on mouse press over figure background, over a disabled or
 % --- inactive control, or over an axes background.
 function figure2_WindowButtonUpFcn(hObject, eventdata, handles)
-% hObject    handle to axes2 (see GCBO)
+% hObject    handle to Fig_seg (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 global Mflag Aflag Fflag value Dflag Sflag;
@@ -511,17 +504,17 @@ end
 
 
 % --- Executes during object creation, after setting all properties.
-function axes1_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to axes1 (see GCBO)
+function Fig_raw_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Fig_raw (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
-% Hint: place code in OpeningFcn to populate axes1
+% Hint: place code in OpeningFcn to populate Fig_raw
 
 
 % --- Executes on mouse press over axes background.
-function axes2_ButtonDownFcn(hObject, eventdata, handles)
-% hObject    handle to axes2 (see GCBO)
+function Fig_seg_ButtonDownFcn(hObject, eventdata, handles)
+% hObject    handle to Fig_seg (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
@@ -541,6 +534,7 @@ if button_state == get(hObject,'Max')
     set(handles.Fix,'Value',0);
     set(handles.Separate,'Value',0);
     set(handles.DeleteNoise,'Value',0);
+    set(handles.Add,'Value',1);
 elseif button_state==get(hObject,'Min')
     Aflag=0;
     set(handles.Add,'Value',0);
@@ -564,6 +558,7 @@ if button_state == get(hObject,'Max')
     set(handles.Separate,'Value',0);
     set(handles.DeleteNoise,'Value',0);
     set(handles.Add,'Value',0);
+    set(handles.Fix,'Value',1);
 elseif button_state==get(hObject,'Min')
     Fflag=0;
     set(handles.Fix,'Value',0);
@@ -587,6 +582,7 @@ if button_state == get(hObject,'Max')
     set(handles.Fix,'Value',0);
     set(handles.Separate,'Value',0);
     set(handles.Add,'Value',0);
+    set(handles.DeleteNoise,'Value',1);
 elseif button_state==get(hObject,'Min')
     Dflag=0;
     set(handles.DeleteNoise,'Value',0);
@@ -609,33 +605,12 @@ if button_state == get(hObject,'Max')
     set(handles.Fix,'Value',0);
     set(handles.Add,'Value',0);
     set(handles.DeleteNoise,'Value',0);
+    set(handles.Separate,'Value',1);
 elseif button_state==get(hObject,'Min')
     Sflag=0;
     set(handles.Separate,'Value',0);
 end
 guidata(hObject, handles);
-
-
-function edit_Callback(hObject, eventdata, handles)
-% hObject    handle to edit (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit as text
-%        str2double(get(hObject,'String')) returns contents of edit as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function edit_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
 
 
 % --- Executes on button press in SaveImage.
@@ -676,7 +651,7 @@ end
 
 guidata(hObject, handles);
 
-axes(handles.axes2);
+axes(handles.Fig_seg);
 set(gca,'NextPlot','add');
 imshow(Img,handles.cmap);
 freezeColors;
@@ -685,7 +660,7 @@ set(gcf,'WindowButtonDownFcn',{@figure2_WindowButtonDownFcn,handles});
 set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
 set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});
 
-axes(handles.axes1);
+axes(handles.Fig_raw);
 imshow(handles.rawEachFrame{1,handles.counter});
      
 msgbox('save successfully','Infor');
@@ -723,25 +698,27 @@ function ShowLable_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 global value;
 
-    set(handles.edit2,'String',[num2str(value)]);
+    set(handles.edit2,'String',num2str(value));
 
 guidata(hObject, handles);
 % Hint: get(hObject,'Value') returns toggle state of ShowLable
 
 
-
-function edit2_Callback(hObject, eventdata, handles)
-% hObject    handle to edit2 (see GCBO)
+% --- Executes during object creation, after setting all properties.
+function edit_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+% handles    empty - handles not created until after all CreateFcns called
 
-% Hints: get(hObject,'String') returns contents of edit2 as text
-%        str2double(get(hObject,'String')) returns contents of edit2 as a double
-
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
 
 % --- Executes during object creation, after setting all properties.
 function edit2_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit2 (see GCBO)
+% hObject    handle to edit (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
