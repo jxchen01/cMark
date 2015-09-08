@@ -22,7 +22,7 @@
 
 % Edit the above text to modify the response to help seg_remedy
 
-% Last Modified by GUIDE v2.5 07-Sep-2015 00:53:56
+% Last Modified by GUIDE v2.5 07-Sep-2015 20:16:52
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -52,7 +52,7 @@ function seg_remedy_OpeningFcn(hObject, eventdata, handles, varargin)
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   unrecognized PropertyName/PropertyValue pairs from the
 %            command line (see VARARGIN)
-
+global Aflag Fflag Dflag Sflag
 % Choose default command line output for seg_remedy
 handles.output = hObject;
 
@@ -61,6 +61,12 @@ handles.output = hObject;
 set(handles.slider, 'Max', 10);
 SliderStepX = 1/(10-0);
 set(handles.slider, 'SliderStep', [SliderStepX 1]);
+
+set(handles.Operation,'SelectedObject',handles.Add)
+Aflag=1;
+Fflag=0;
+Dflag=0;
+Sflag=0;
 
 % Update handles structure
 guidata(hObject, handles);
@@ -519,98 +525,98 @@ function Fig_seg_ButtonDownFcn(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 
-% --- Executes on button press in Add.
-function Add_Callback(hObject, eventdata, handles)
-% hObject    handle to Add (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-global Aflag Fflag Dflag Sflag
-button_state=get(hObject,'Value');
-if button_state == get(hObject,'Max')
-    Aflag=1;
-    Fflag=0;
-    Dflag=0;
-    Sflag=0;
-    set(handles.Fix,'Value',0);
-    set(handles.Separate,'Value',0);
-    set(handles.DeleteNoise,'Value',0);
-    set(handles.Add,'Value',1);
-elseif button_state==get(hObject,'Min')
-    Aflag=0;
-    set(handles.Add,'Value',0);
-end
-guidata(hObject, handles);
-% Hint: get(hObject,'Value') returns toggle state of Add
-
-
-% --- Executes on button press in Fix.
-function Fix_Callback(hObject, eventdata, handles)
-% hObject    handle to Fix (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-global Aflag Fflag Dflag Sflag
-button_state=get(hObject,'Value');
-if button_state == get(hObject,'Max')
-    Aflag=0;
-    Fflag=1;
-    Dflag=0;
-    Sflag=0;
-    set(handles.Separate,'Value',0);
-    set(handles.DeleteNoise,'Value',0);
-    set(handles.Add,'Value',0);
-    set(handles.Fix,'Value',1);
-elseif button_state==get(hObject,'Min')
-    Fflag=0;
-    set(handles.Fix,'Value',0);
-end
-guidata(hObject, handles);
-% Hint: get(hObject,'Value') returns toggle state of Fix
-
-
-% --- Executes on button press in DeleteNoise.
-function DeleteNoise_Callback(hObject, eventdata, handles)
-% hObject    handle to DeleteNoise (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-global Aflag Fflag Dflag Sflag
-button_state=get(hObject,'Value');
-if button_state == get(hObject,'Max')
-    Aflag=0;
-    Fflag=0;
-    Dflag=1;
-    Sflag=0;
-    set(handles.Fix,'Value',0);
-    set(handles.Separate,'Value',0);
-    set(handles.Add,'Value',0);
-    set(handles.DeleteNoise,'Value',1);
-elseif button_state==get(hObject,'Min')
-    Dflag=0;
-    set(handles.DeleteNoise,'Value',0);
-end
-guidata(hObject, handles);
-
-
-% --- Executes on button press in Separate.
-function Separate_Callback(hObject, eventdata, handles)
-% hObject    handle to Separate (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-global Aflag Fflag Dflag Sflag
-button_state=get(hObject,'Value');
-if button_state == get(hObject,'Max')
-    Aflag=0;
-    Fflag=0;
-    Dflag=0;
-    Sflag=1;
-    set(handles.Fix,'Value',0);
-    set(handles.Add,'Value',0);
-    set(handles.DeleteNoise,'Value',0);
-    set(handles.Separate,'Value',1);
-elseif button_state==get(hObject,'Min')
-    Sflag=0;
-    set(handles.Separate,'Value',0);
-end
-guidata(hObject, handles);
+% % --- Executes on button press in Add.
+% function Add_Callback(hObject, eventdata, handles)
+% % hObject    handle to Add (see GCBO)
+% % eventdata  reserved - to be defined in a future version of MATLAB
+% % handles    structure with handles and user data (see GUIDATA)
+% global Aflag Fflag Dflag Sflag
+% button_state=get(hObject,'Value');
+% if button_state == get(hObject,'Max')
+%     Aflag=1;
+%     Fflag=0;
+%     Dflag=0;
+%     Sflag=0;
+%     set(handles.Fix,'Value',0);
+%     set(handles.Seperate,'Value',0);
+%     set(handles.DeleteNoise,'Value',0);
+%     set(handles.Add,'Value',1);
+% elseif button_state==get(hObject,'Min')
+%     Aflag=0;
+%     set(handles.Add,'Value',0);
+% end
+% guidata(hObject, handles);
+% % Hint: get(hObject,'Value') returns toggle state of Add
+% 
+% 
+% % --- Executes on button press in Fix.
+% function Fix_Callback(hObject, eventdata, handles)
+% % hObject    handle to Fix (see GCBO)
+% % eventdata  reserved - to be defined in a future version of MATLAB
+% % handles    structure with handles and user data (see GUIDATA)
+% global Aflag Fflag Dflag Sflag
+% button_state=get(hObject,'Value');
+% if button_state == get(hObject,'Max')
+%     Aflag=0;
+%     Fflag=1;
+%     Dflag=0;
+%     Sflag=0;
+%     set(handles.Seperate,'Value',0);
+%     set(handles.DeleteNoise,'Value',0);
+%     set(handles.Add,'Value',0);
+%     set(handles.Fix,'Value',1);
+% elseif button_state==get(hObject,'Min')
+%     Fflag=0;
+%     set(handles.Fix,'Value',0);
+% end
+% guidata(hObject, handles);
+% % Hint: get(hObject,'Value') returns toggle state of Fix
+% 
+% 
+% % --- Executes on button press in DeleteNoise.
+% function DeleteNoise_Callback(hObject, eventdata, handles)
+% % hObject    handle to DeleteNoise (see GCBO)
+% % eventdata  reserved - to be defined in a future version of MATLAB
+% % handles    structure with handles and user data (see GUIDATA)
+% global Aflag Fflag Dflag Sflag
+% button_state=get(hObject,'Value');
+% if button_state == get(hObject,'Max')
+%     Aflag=0;
+%     Fflag=0;
+%     Dflag=1;
+%     Sflag=0;
+%     set(handles.Fix,'Value',0);
+%     set(handles.Seperate,'Value',0);
+%     set(handles.Add,'Value',0);
+%     set(handles.DeleteNoise,'Value',1);
+% elseif button_state==get(hObject,'Min')
+%     Dflag=0;
+%     set(handles.DeleteNoise,'Value',0);
+% end
+% guidata(hObject, handles);
+% 
+% 
+% % --- Executes on button press in Seperate.
+% function Seperate_Callback(hObject, eventdata, handles)
+% % hObject    handle to Seperate (see GCBO)
+% % eventdata  reserved - to be defined in a future version of MATLAB
+% % handles    structure with handles and user data (see GUIDATA)
+% global Aflag Fflag Dflag Sflag
+% button_state=get(hObject,'Value');
+% if button_state == get(hObject,'Max')
+%     Aflag=0;
+%     Fflag=0;
+%     Dflag=0;
+%     Sflag=1;
+%     set(handles.Fix,'Value',0);
+%     set(handles.Add,'Value',0);
+%     set(handles.DeleteNoise,'Value',0);
+%     set(handles.Seperate,'Value',1);
+% elseif button_state==get(hObject,'Min')
+%     Sflag=0;
+%     set(handles.Seperate,'Value',0);
+% end
+% guidata(hObject, handles);
 
 
 % --- Executes on button press in SaveImage.
@@ -727,3 +733,36 @@ function edit2_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes when selected object is changed in Operation.
+function Operation_SelectionChangedFcn(hObject, eventdata, handles)
+% hObject    handle to the selected object in Operation 
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+global Aflag Fflag Dflag Sflag
+gp=get(handles.Operation,'SelectedObject');
+ts=get(gp,'Tag');
+switch ts
+    case 'Add'
+        Aflag=1;
+        Fflag=0;
+        Dflag=0;
+        Sflag=0;
+    case 'Fix'
+        Aflag=0;
+        Fflag=1;
+        Dflag=0;
+        Sflag=0;       
+    case 'Seperate'
+        Aflag=0;
+        Fflag=0;
+        Dflag=0;
+        Sflag=1;
+    case 'Delete'
+        Aflag=0;
+        Fflag=0;
+        Dflag=1;
+        Sflag=0;
+end
+guidata(hObject, handles);
