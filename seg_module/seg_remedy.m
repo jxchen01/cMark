@@ -278,7 +278,7 @@ if(x>=1 && y>=1 && x<=handles.ydim && y<=handles.xdim) % notice that x-y is reve
     value=handles.Img(y,x);
     if value==0 && Fflag
         msgbox('Not in the range of cell, please choose again!')
-    elseif(Aflag || Fflag || Dflag || Sflag) 
+    elseif(Aflag || Fflag || Sflag) 
         
         Mflag = 1;
         %%%%%% after button down, prepare necessary information for
@@ -290,11 +290,8 @@ if(x>=1 && y>=1 && x<=handles.ydim && y<=handles.xdim) % notice that x-y is reve
         NImg(y,x)=1;
         handles.NImg=NImg;
         guidata(hObject,handles);   
-        %%%%%% real-time display according to different types of
-        %%%%%% modification
-        temp1=get(handles.Add,'Value');
-        temp2=get(handles.Fix,'Value');
         
+        %%%%%% real-time display according to different types of modification
         if Aflag
             Color = handles.cmap(handles.m+1,:);
             plot(handles.Fig_seg, x, y, 'Color', Color);
@@ -307,9 +304,32 @@ if(x>=1 && y>=1 && x<=handles.ydim && y<=handles.xdim) % notice that x-y is reve
             plot(handles.Fig_seg, x, y, 'Color', [0,0,0]);
             drawnow;
         end
+        
+        x0 = x;
+        y0 = y;
+    elseif(Dflag)
+        cImg = handles.Img;
+        idx_rm = cImg(y,x);
+        if(idx_rm>0)
+            cList = handles.cList;
+            cImg(ismember(cImg,idx_rm))=0;
+            for i=idx_rm+1:1:handles.m
+                cImg(ismember(cImg,i))=i-1;
+                cList{i-1}=cList{i};
+            end
+            cList(handles.m)=[];
+            handles.m = handles.m-1;
+            handles.cList = cList;
+            handles.Img = cImg;
+            
+            axes(handles.Fig_seg);
+            imshow(cImg,handles.cmap);
+            freezeColors;
+            
+            axes(handles.Fig_raw);
+            imshow(handles.rawEachFrame{1,handles.counter});
+        end
     end
-    x0 = x;
-    y0 = y;
     guidata(hObject, handles);
 else
     Mflag=0;
@@ -345,14 +365,10 @@ if Mflag
     [xp, yp]=bresenham(x0,y0,x,y);
     if((~any(xp<1)) && (~any(xp>handles.ydim)) && (~any(yp<1)) &&(~any(yp>handles.xdim)))    
         % notice that x-y is reversed in plot 
-        
         ind = sub2ind([handles.xdim,handles.ydim],yp,xp);
         
         LineWidth = round(get(handles.slider, 'Value'))+1;
         LineWidthPlot = LineWidth + 2;
-        
-        temp1=get(handles.Add,'Value');
-        temp2=get(handles.Fix,'Value');
         
         NImg=zeros(handles.xdim,handles.ydim);
         NImg(ind)=1;
@@ -371,7 +387,7 @@ if Mflag
             Color = handles.cmap(value,:);
             plot(handles.Fig_seg, [x0 x], [y0 y], 'LineWidth', LineWidthPlot, 'Color', Color);
             drawnow;         
-        elseif Dflag || Sflag
+        elseif Sflag
             Saveflag = 0;
             plot(handles.Fig_seg, [x0 x], [y0 y], 'LineWidth', LineWidthPlot, 'Color', [0,0,0]);
             drawnow;
@@ -395,10 +411,11 @@ if Mflag
     Mflag = 0;
     % retrieve the lastest handles
     handles = guidata(hObject);
-    if Aflag
+    
+    if Aflag            
         handles.m=handles.m+1;
-        handles.Img(handles.NImg>0)=handles.m;
-        handles.cList{1,handles.m}=struct('seg',handles.NImg,'size',nnz(handles.NImg));
+        handles.Img(handles.NImg>0)=handles.m; % update matrix 
+        handles.cList{1,handles.m}=struct('seg',handles.NImg,'size',nnz(handles.NImg)); % update cell
     elseif Fflag
         %Need User first choose the intend-to-fix cell, that's to say,
         %first buttondown on the specific cell
@@ -406,55 +423,58 @@ if Mflag
             handles.Img(handles.NImg>0)=value;
             handles.cList{1,value}=struct('seg',handles.NImg,'size',nnz(handles.NImg));
         end
-    elseif Dflag
-        %     Need to delete unit in cellEachFrame
-        cImg=handles.Img;
-        NImg=handles.NImg;
-        idx_modified = unique(nonzeros(cImg(NImg>0)));
-        cImg(NImg>0)=0;
-
-        brokenFlag=0;
-        for i=1:1:numel(idx_modified)
-            sRegion = ismember(cImg,idx_modified(i));
-            cc = bwconncomp(sRegion);
-            if(cc.NumObjects>0)
-                % not wholly erased
-                handles.cList{idx_modified(i)} = struct('seg',sRegion,'size',nnz(sRegion));
-                if(cc.NumObjects>1)
-                    % region is broken
-                    brokenFlag=1;
-                end
-            else
-                handles.cList{idx_modified(i)}=[];
-            end
-        end
-        
-        handles.Img=cImg;
-        guidata(hObject, handles);
-        
-        if(brokenFlag)
-            msgbox('Just a reminder: You choose to remove noise or prune one cell, but at least one cell is broken');
-        end
+%     elseif Dflag
+%         % Need to delete unit in cellEachFrame
+%         cImg=handles.Img;
+%         NImg=handles.NImg;
+%         idx_modified = unique(nonzeros(cImg(NImg>0)));
+%         cImg(NImg>0)=0;
+% 
+%         brokenFlag=0;
+%         for i=1:1:numel(idx_modified)
+%             sRegion = ismember(cImg,idx_modified(i));
+%             cc = bwconncomp(sRegion);
+%             if(cc.NumObjects>0)
+%                 % not wholly erased
+%                 handles.cList{idx_modified(i)} = struct('seg',sRegion,'size',nnz(sRegion));
+%                 if(cc.NumObjects>1)
+%                     % region is broken
+%                     brokenFlag=1;
+%                 end
+%             else
+%                 handles.cList{idx_modified(i)}=[];
+%             end
+%         end
+%         
+%         handles.Img=cImg;
+%         guidata(hObject, handles);
+%         
+%         if(brokenFlag)
+%             msgbox('Just a reminder: You choose to remove noise or prune one cell, but at least one cell is broken');
+%         end
         
     elseif Sflag
         cImg=handles.Img;
+        cList=handles.cList;
         NImg=handles.NImg;
         idx_modified = unique(nonzeros(cImg(NImg>0)));
         cImg(NImg>0)=0;
         
         non_brokenFlag=0;
+        empty_idx=[];
+        max_id = handles.m;
+        
         for i=1:1:numel(idx_modified)
             sRegion = ismember(cImg,idx_modified(i));
             cc = bwconncomp(sRegion);
             if(cc.NumObjects>0)
                 % not wholly erased
                 tmp=zeros(handles.xdim,handles.ydim);
-                tmp(cc.PixelIdxList{1})=1;
-                handles.cList{idx_modified(i)} = struct('seg',tmp,'size',numel(cc.PixelIdxList{1}));
+                tmp(cc.PixelIdxList{1})=1; %%% the first component adopts the old index
+                cList{idx_modified(i)} = struct('seg',tmp,'size',numel(cc.PixelIdxList{1}));
                 
-                if(cc.NumObjects>1)
+                if(cc.NumObjects>1) %%%% the remaining components will have new index
                     % region is broken
-                    max_id = handles.m;
                     for j=2:1:cc.NumObjects
                         max_id = max_id+1;
                         % update mat
@@ -462,25 +482,44 @@ if Mflag
                         % update cell
                         tmp=zeros(handles.xdim,handles.ydim);
                         tmp(cc.PixelIdxList{j})=1;
-                        handles.cList{max_id}=struct('seg',tmp,'size',numel(cc.PixelIdxList{j}));
+                        cList{max_id}=struct('seg',tmp,'size',numel(cc.PixelIdxList{j}));
                     end
-                else
-                    non_brokenFlag=1;
                 end
             else
                 non_brokenFlag=1;
-                handles.cList{idx_modified(i)}=[];
+                cList{idx_modified(i)}=[];
+                empty_idx=cat(2,empty_idx,idx_modified(i));
+            end
+        end
+        
+        if(~isempty(empty_idx))
+            for i=1:1:numel(empty_idx)
+                idx_rm = empty_idx(i);
+                cList(idx_rm)=[];
+                for j=idx_rm+1:1:max_id
+                    cImg(ismember(cImg,j))=j-1;
+                end
+                max_id = max_id - 1;
             end
         end
         
         handles.Img=cImg;
+        handles.cList = cList;
         handles.m = max_id;
-        guidata(hObject, handles);
+        %guidata(hObject, handles);
         
         if(non_brokenFlag)
             msgbox('Just a reminder: You choose to cut cells, but at least one cell is only pruned instead of cutted');
         end
     end
+    
+    axes(handles.Fig_seg);
+    imshow(handles.Img,handles.cmap);
+    freezeColors;
+    
+    axes(handles.Fig_raw);
+    imshow(handles.rawEachFrame{1,handles.counter});
+    
     %handles = rmfield(handles,'NImg');
     guidata(hObject, handles);
 end
@@ -492,7 +531,7 @@ function slider_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 x=round(get(hObject,'Value')) + 1;
-set(handles.edit,'String',[num2str(x)]);
+set(handles.edit,'String',num2str(x));
 % Hints: get(hObject,'Value') returns position of slider
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
 
@@ -523,100 +562,6 @@ function Fig_seg_ButtonDownFcn(hObject, eventdata, handles)
 % hObject    handle to Fig_seg (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
-
-% % --- Executes on button press in Add.
-% function Add_Callback(hObject, eventdata, handles)
-% % hObject    handle to Add (see GCBO)
-% % eventdata  reserved - to be defined in a future version of MATLAB
-% % handles    structure with handles and user data (see GUIDATA)
-% global Aflag Fflag Dflag Sflag
-% button_state=get(hObject,'Value');
-% if button_state == get(hObject,'Max')
-%     Aflag=1;
-%     Fflag=0;
-%     Dflag=0;
-%     Sflag=0;
-%     set(handles.Fix,'Value',0);
-%     set(handles.Seperate,'Value',0);
-%     set(handles.DeleteNoise,'Value',0);
-%     set(handles.Add,'Value',1);
-% elseif button_state==get(hObject,'Min')
-%     Aflag=0;
-%     set(handles.Add,'Value',0);
-% end
-% guidata(hObject, handles);
-% % Hint: get(hObject,'Value') returns toggle state of Add
-% 
-% 
-% % --- Executes on button press in Fix.
-% function Fix_Callback(hObject, eventdata, handles)
-% % hObject    handle to Fix (see GCBO)
-% % eventdata  reserved - to be defined in a future version of MATLAB
-% % handles    structure with handles and user data (see GUIDATA)
-% global Aflag Fflag Dflag Sflag
-% button_state=get(hObject,'Value');
-% if button_state == get(hObject,'Max')
-%     Aflag=0;
-%     Fflag=1;
-%     Dflag=0;
-%     Sflag=0;
-%     set(handles.Seperate,'Value',0);
-%     set(handles.DeleteNoise,'Value',0);
-%     set(handles.Add,'Value',0);
-%     set(handles.Fix,'Value',1);
-% elseif button_state==get(hObject,'Min')
-%     Fflag=0;
-%     set(handles.Fix,'Value',0);
-% end
-% guidata(hObject, handles);
-% % Hint: get(hObject,'Value') returns toggle state of Fix
-% 
-% 
-% % --- Executes on button press in DeleteNoise.
-% function DeleteNoise_Callback(hObject, eventdata, handles)
-% % hObject    handle to DeleteNoise (see GCBO)
-% % eventdata  reserved - to be defined in a future version of MATLAB
-% % handles    structure with handles and user data (see GUIDATA)
-% global Aflag Fflag Dflag Sflag
-% button_state=get(hObject,'Value');
-% if button_state == get(hObject,'Max')
-%     Aflag=0;
-%     Fflag=0;
-%     Dflag=1;
-%     Sflag=0;
-%     set(handles.Fix,'Value',0);
-%     set(handles.Seperate,'Value',0);
-%     set(handles.Add,'Value',0);
-%     set(handles.DeleteNoise,'Value',1);
-% elseif button_state==get(hObject,'Min')
-%     Dflag=0;
-%     set(handles.DeleteNoise,'Value',0);
-% end
-% guidata(hObject, handles);
-% 
-% 
-% % --- Executes on button press in Seperate.
-% function Seperate_Callback(hObject, eventdata, handles)
-% % hObject    handle to Seperate (see GCBO)
-% % eventdata  reserved - to be defined in a future version of MATLAB
-% % handles    structure with handles and user data (see GUIDATA)
-% global Aflag Fflag Dflag Sflag
-% button_state=get(hObject,'Value');
-% if button_state == get(hObject,'Max')
-%     Aflag=0;
-%     Fflag=0;
-%     Dflag=0;
-%     Sflag=1;
-%     set(handles.Fix,'Value',0);
-%     set(handles.Add,'Value',0);
-%     set(handles.DeleteNoise,'Value',0);
-%     set(handles.Seperate,'Value',1);
-% elseif button_state==get(hObject,'Min')
-%     Sflag=0;
-%     set(handles.Seperate,'Value',0);
-% end
-% guidata(hObject, handles);
 
 
 % --- Executes on button press in SaveImage.
