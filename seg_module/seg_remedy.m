@@ -22,7 +22,7 @@
 
 % Edit the above text to modify the response to help seg_remedy
 
-% Last Modified by GUIDE v2.5 07-Sep-2015 20:16:52
+% Last Modified by GUIDE v2.5 09-Sep-2015 00:07:07
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -67,6 +67,8 @@ Aflag=1;
 Fflag=0;
 Dflag=0;
 Sflag=0;
+
+%set(gcf,'toolbar','figure');
 
 % Update handles structure
 guidata(hObject, handles);
@@ -655,29 +657,29 @@ guidata(hObject, handles);
 % Hint: get(hObject,'Value') returns toggle state of ShowLable
 
 
-% --- Executes during object creation, after setting all properties.
-function edit_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
+% % --- Executes during object creation, after setting all properties.
+% function edit_CreateFcn(hObject, eventdata, handles)
+% % hObject    handle to edit (see GCBO)
+% % eventdata  reserved - to be defined in a future version of MATLAB
+% % handles    empty - handles not created until after all CreateFcns called
+% 
+% % Hint: edit controls usually have a white background on Windows.
+% %       See ISPC and COMPUTER.
+% if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+%     set(hObject,'BackgroundColor','white');
+% end
 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-% --- Executes during object creation, after setting all properties.
-function edit2_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
+% % --- Executes during object creation, after setting all properties.
+% function edit2_CreateFcn(hObject, eventdata, handles)
+% % hObject    handle to edit (see GCBO)
+% % eventdata  reserved - to be defined in a future version of MATLAB
+% % handles    empty - handles not created until after all CreateFcns called
+% 
+% % Hint: edit controls usually have a white background on Windows.
+% %       See ISPC and COMPUTER.
+% if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+%     set(hObject,'BackgroundColor','white');
+% end
 
 
 % --- Executes when selected object is changed in Operation.
