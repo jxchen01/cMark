@@ -52,7 +52,9 @@ function Simpleone_OpeningFcn(hObject, eventdata, handles, varargin)
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to Simpleone (see VARARGIN)
 
-global Aflag Dflag flag;
+global Aflag Dflag flag lock_up;
+
+lock_up=0;
 
 % Choose default command line output for Simpleone
 handles.output = hObject;
@@ -316,23 +318,27 @@ function figure1_WindowButtonDownFcn(hObject, eventdata, handles)
 % hObject    handle to axes2 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-global flag Aflag Dflag x y;
+global flag Aflag Dflag x y lock_up;
 
-if(Aflag || Dflag)
-    handles = guidata(hObject);
-    cp = get(handles.fig, 'CurrentPoint');
-    x = round(cp(1,1));
-    y = round(cp(1,2));
+if(~lock_up)
 
-    if(x>=1 && y>=1 && x<=handles.ydim && y<=handles.xdim)
-        flag = 1;
-        NewPixel = sub2ind(size(handles.Img),y,x);
-        handles.NewPixel = NewPixel;
-        NImg=zeros(handles.xdim,handles.ydim);
-        NImg(y,x)=1;
-        handles.NImg = NImg;
-        guidata(hObject,handles);
+    if(Aflag || Dflag)
+        handles = guidata(hObject);
+        cp = get(handles.fig, 'CurrentPoint');
+        x = round(cp(1,1));
+        y = round(cp(1,2));
+        
+        if(x>=1 && y>=1 && x<=handles.ydim && y<=handles.xdim)
+            flag = 1;
+            NewPixel = sub2ind(size(handles.Img),y,x);
+            handles.NewPixel = NewPixel;
+            NImg=zeros(handles.xdim,handles.ydim);
+            NImg(y,x)=1;
+            handles.NImg = NImg;
+            guidata(hObject,handles);
+        end
     end
+
 end
 
 
@@ -369,9 +375,7 @@ if flag
 
         NImg = handles.NImg;
         NImg(ind)=1;
-        %se = strel('disk',LineWidth,0);
-        %NImg=imdilate(NImg,se);
-        
+        handles.NImg = handles.NImg | NImg;
         guidata(hObject, handles);
         
         if Aflag
@@ -383,9 +387,6 @@ if flag
             plot(handles.fig, [x0 x], [y0 y], 'LineWidth', LineWidthPlot, 'Color', Color);
             drawnow;         
         end
-        handles.NImg = handles.NImg | NImg;
-        guidata(hObject, handles);
-    
     end
 end
 
@@ -397,10 +398,11 @@ function figure1_WindowButtonUpFcn(hObject, eventdata, handles)
 % hObject    handle to axes2 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-global CLable Aflag Dflag flag;
+global CLable Aflag Dflag flag lock_up;
 
 if flag
     flag=0;
+    lock_up=1;
     % retrieve the lastest handles
     handles = guidata(hObject);
     NImg = handles.NImg;
@@ -416,13 +418,12 @@ if flag
         %if overlap with previous points, then exclude those pixels
     end
     
-    [xx,yy] = ind2sub(size(handles.xdim,handles.ydim),ind);
+    [xx,yy] = ind2sub([handles.xdim,handles.ydim],ind);
     sub = [xx,yy];
     temp = repmat([handles.counter],length(ind),1);
     NewList = cat(2,sub,temp);
 
     if Aflag
-        handles=guidata(hObject);
         handles.lable_inx{CLable} = cat(1,handles.lable_inx{CLable},NewList);
         
         rgb=handles.rgb{handles.counter};
@@ -478,6 +479,8 @@ if flag
     set(gcf,'WindowButtonDownFcn',{@figure1_WindowButtonDownFcn,handles});
     set(gcf,'WindowButtonMotionFcn',{@figure1_WindowButtonMotionFcn,handles});
     set(gcf,'WindowButtonUpFcn',{@figure1_WindowButtonUpFcn,handles});
+    
+    lock_up=0;
 end
 
 

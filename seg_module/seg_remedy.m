@@ -323,6 +323,7 @@ if(x>=1 && y>=1 && x<=handles.ydim && y<=handles.xdim) % notice that x-y is reve
             handles.m = handles.m-1;
             handles.cList = cList;
             handles.Img = cImg;
+            guidata(hObject, handles);
             
             axes(handles.Fig_seg);
             imshow(cImg,handles.cmap);
@@ -331,8 +332,7 @@ if(x>=1 && y>=1 && x<=handles.ydim && y<=handles.xdim) % notice that x-y is reve
             axes(handles.Fig_raw);
             imshow(handles.rawEachFrame{1,handles.counter});
         end
-    end
-    guidata(hObject, handles);
+    end    
 else
     Mflag=0;
 end
@@ -376,7 +376,7 @@ if Mflag
         NImg(ind)=1;
         se = strel('disk',LineWidth,0);
         NImg=imdilate(NImg,se);
-        
+        handles.NImg = handles.NImg | NImg;
         guidata(hObject, handles);
         
         if Aflag
@@ -394,9 +394,6 @@ if Mflag
             plot(handles.Fig_seg, [x0 x], [y0 y], 'LineWidth', LineWidthPlot, 'Color', [0,0,0]);
             drawnow;
         end
-        handles.NImg = handles.NImg | NImg;
-        guidata(hObject, handles);
-    
     end
 end
 
@@ -425,35 +422,6 @@ if Mflag
             handles.Img(handles.NImg>0)=value;
             handles.cList{1,value}=struct('seg',handles.NImg,'size',nnz(handles.NImg));
         end
-%     elseif Dflag
-%         % Need to delete unit in cellEachFrame
-%         cImg=handles.Img;
-%         NImg=handles.NImg;
-%         idx_modified = unique(nonzeros(cImg(NImg>0)));
-%         cImg(NImg>0)=0;
-% 
-%         brokenFlag=0;
-%         for i=1:1:numel(idx_modified)
-%             sRegion = ismember(cImg,idx_modified(i));
-%             cc = bwconncomp(sRegion);
-%             if(cc.NumObjects>0)
-%                 % not wholly erased
-%                 handles.cList{idx_modified(i)} = struct('seg',sRegion,'size',nnz(sRegion));
-%                 if(cc.NumObjects>1)
-%                     % region is broken
-%                     brokenFlag=1;
-%                 end
-%             else
-%                 handles.cList{idx_modified(i)}=[];
-%             end
-%         end
-%         
-%         handles.Img=cImg;
-%         guidata(hObject, handles);
-%         
-%         if(brokenFlag)
-%             msgbox('Just a reminder: You choose to remove noise or prune one cell, but at least one cell is broken');
-%         end
         
     elseif Sflag
         cImg=handles.Img;
@@ -508,8 +476,7 @@ if Mflag
         handles.Img=cImg;
         handles.cList = cList;
         handles.m = max_id;
-        %guidata(hObject, handles);
-        
+       
         if(non_brokenFlag)
             msgbox('Just a reminder: You choose to cut cells, but at least one cell is only pruned instead of cutted');
         end
