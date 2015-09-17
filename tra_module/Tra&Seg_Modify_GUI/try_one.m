@@ -120,11 +120,11 @@ function Display_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 colormapName = 'color.mat';
-FileName = uigetfile('*.mat','Select the MATLAB code file');
+[FileName,PathName] = uigetfile('*.mat','Select the MATLAB code file');
 if isequal(FileName,0)
    msgbox('User selected Cancel');
 else
-   load(FileName);
+   load([PathName,FileName]);
    load(colormapName);
    handles = guidata(hObject);
    handles.colormap = colormap.colormap;
