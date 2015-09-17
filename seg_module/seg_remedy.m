@@ -22,7 +22,7 @@
 
 % Edit the above text to modify the response to help seg_remedy
 
-% Last Modified by GUIDE v2.5 16-Sep-2015 14:47:07
+% Last Modified by GUIDE v2.5 17-Sep-2015 14:38:34
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -120,6 +120,10 @@ if ~isequal(FileName,0)
     handles.counter = 1;
     handles.Img = matEachFrame{1,1};
     handles.cList = cellEachFrame{1,1};
+    
+    set(handles.frame_idx,'String','1');
+    set(handles.total_frame,'String',['/',num2str(handles.Maxindex)]);
+    
     guidata(hObject, handles);
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%% visualization and trigger mouse gesture %%%%%%%%%%
@@ -174,6 +178,7 @@ else
     handles.counter = nc;
     handles.Img=handles.matEachFrame{1,nc};
     handles.cList=handles.cellEachFrame{1,nc};
+    set(handles.frame_idx,'String',num2str(nc));
     guidata(hObject, handles);
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%% update the visualization %%%%%%%%%%%%%%%%%%
@@ -231,6 +236,7 @@ end
      handles.counter = nc;
      handles.Img=handles.matEachFrame{1,nc};
      handles.cList=handles.cellEachFrame{1,nc};
+     set(handles.frame_idx,'String',num2str(nc));
      guidata(hObject, handles);
      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      %%%%%%%%%%%%%%%% update the visualization %%%%%%%%%%%%%%%%%%
@@ -540,15 +546,6 @@ if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColo
 end
 
 
-% % --- Executes during object creation, after setting all properties.
-% function Fig_raw_CreateFcn(hObject, eventdata, handles)
-% % hObject    handle to Fig_raw (see GCBO)
-% % eventdata  reserved - to be defined in a future version of MATLAB
-% % handles    empty - handles not created until after all CreateFcns called
-% 
-% % Hint: place code in OpeningFcn to populate Fig_raw
-
-
 % --- Executes on mouse press over axes background.
 function Fig_seg_ButtonDownFcn(hObject, eventdata, handles)
 % hObject    handle to Fig_seg (see GCBO)
@@ -636,21 +633,6 @@ switch choice
     case 'No, I will make more changes.'
         return;
 end
-    
-
-
-% --- Executes on button press in ShowLable.
-function ShowLable_Callback(hObject, eventdata, handles)
-% hObject    handle to ShowLable (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-global value;
-
-    set(handles.edit2,'String',num2str(value));
-
-guidata(hObject, handles);
-% Hint: get(hObject,'Value') returns toggle state of ShowLable
-
 
 % --- Executes when selected object is changed in Operation.
 function Operation_SelectionChangedFcn(hObject, eventdata, handles)
@@ -686,23 +668,39 @@ guidata(hObject, handles);
 
 
 
-function edit1_Callback(hObject, eventdata, handles)
-% hObject    handle to edit1 (see GCBO)
+function frame_idx_Callback(hObject, eventdata, handles)
+% hObject    handle to frame_idx (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit1 as text
-%        str2double(get(hObject,'String')) returns contents of edit1 as a double
+% Hints: get(hObject,'String') returns contents of frame_idx as text
+%        str2double(get(hObject,'String')) returns contents of frame_idx as a double
+handles = guidata(hObject);
+nc = str2double(get(hObject,'String'));
+if(nc>1 && nc<handles.Maxindex)
+    handles.counter=nc;
+    handles.Img=handles.matEachFrame{1,nc};
+    handles.cList=handles.cellEachFrame{1,nc};
+    guidata(hObject, handles);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%% update the visualization %%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    axes(handles.Fig_seg);
+    set(gca,'NextPlot','add');
 
-
-% --- Executes during object creation, after setting all properties.
-function edit1_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
+    axes(handles.Fig_seg);
+    imshow(handles.rawEachFrame{1,handles.counter});
+    hold on
+    h=imshow(ind2rgb(handles.matEachFrame{1,handles.counter},handles.cmap));
+    hold off
+    alpha=0.55.*ones(handles.xdim,handles.ydim);
+    set(h,'AlphaData',alpha);
+    set(gcf,'WindowButtonDownFcn',{@figure2_WindowButtonDownFcn,handles});
+    set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
+    set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});
+    
+    clear h
+    
+    axes(handles.Fig_raw);
+    imshow(handles.rawEachFrame{1,handles.counter});
 end
