@@ -76,8 +76,6 @@ guidata(hObject, handles);
 % UIWAIT makes seg_remedy wait for user response (see UIRESUME)
 % uiwait(handles.Fig_raw);
 
-
-
 % --- Outputs from this function are returned to the command line.
 function varargout = seg_remedy_OutputFcn(hObject, eventdata, handles)
 % varargout  cell array for returning output args (see VARARGOUT);
@@ -98,9 +96,8 @@ function LoadOrgImg_Callback(hObject, eventdata, handles)
 
 [FileName,PathName] = uigetfile('*.mat','Select the MATLAB code file');
 
-if isequal(FileName,0)
-   msgbox('User selected Cancel');
-else
+if ~isequal(FileName,0)
+  
     load(FileName);
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -133,13 +130,18 @@ else
     %%%%%%% visualization and trigger mouse gesture %%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     axes(handles.Fig_seg);
-    imshow(matEachFrame{1,1},handles.cmap);
-    set(gca,'NextPlot','add');
-    freezeColors;
-    
+    imshow(handles.rawEachFrame{1,1});
+    hold on
+    h=imshow(ind2rgb(matEachFrame{1,1},handles.cmap));
+    hold off
+    alpha=0.55.*ones(size(handles.Img));
+    set(h,'AlphaData',alpha);
+    set(gca,'NextPlot','add');   
     set(gcf,'WindowButtonDownFcn',{@figure2_WindowButtonDownFcn,handles});
     set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
     set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});
+    
+    clear h
     
     axes(handles.Fig_raw);
     imshow(rawEachFrame{1,1});
@@ -173,7 +175,7 @@ end
 
 if handles.counter < 1
     handles.counter = handles.counter + 1;
-    msgbox('Wrong index')
+    msgbox('Already in the first frame')
 else
     handles.Img=handles.matEachFrame{1,handles.counter};
     handles.cList=handles.cellEachFrame{1,handles.counter};
@@ -183,12 +185,19 @@ else
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     axes(handles.Fig_seg);
     set(gca,'NextPlot','add');
-    imshow(handles.matEachFrame{1,handles.counter},handles.cmap); 
-    freezeColors;
-    
+
+    axes(handles.Fig_seg);
+    imshow(handles.rawEachFrame{1,handles.counter});
+    hold on
+    h=imshow(ind2rgb(handles.matEachFrame{1,handles.counter},handles.cmap));
+    hold off
+    alpha=0.55.*ones(handles.xdim,handles.ydim);
+    set(h,'AlphaData',alpha);
     set(gcf,'WindowButtonDownFcn',{@figure2_WindowButtonDownFcn,handles});
     set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
     set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});
+    
+    clear h
     
     axes(handles.Fig_raw);
     imshow(handles.rawEachFrame{1,handles.counter});
@@ -223,7 +232,7 @@ end
 
  if handles.counter > handles.Maxindex
      handles.counter = handles.counter - 1;
-     msgbox('Wrong index') 
+     msgbox('Already in the last frame') 
  else
      handles.Img=handles.matEachFrame{1,handles.counter};
      handles.cList=handles.cellEachFrame{1,handles.counter};
@@ -233,8 +242,14 @@ end
      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      axes(handles.Fig_seg);
      set(gca,'NextPlot','add');
-     imshow(handles.matEachFrame{1,handles.counter},handles.cmap);
-     freezeColors;
+     
+     axes(handles.Fig_seg);
+     imshow(handles.rawEachFrame{1,handles.counter});
+     hold on
+     h=imshow(ind2rgb(handles.matEachFrame{1,handles.counter},handles.cmap));
+     hold off
+     alpha=0.55.*ones(handles.xdim,handles.ydim);
+     set(h,'AlphaData',alpha);
      
      set(gcf,'WindowButtonDownFcn',{@figure2_WindowButtonDownFcn,handles});
      set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
@@ -279,7 +294,7 @@ y = round(cp(1,2));
 if(x>=1 && y>=1 && x<=handles.ydim && y<=handles.xdim) % notice that x-y is reversed in plot
     value=handles.Img(y,x);
     if value==0 && Fflag
-        msgbox('Not in the range of cell, please choose again!')
+        msgbox('Not in the range of any cell body, please click again!')
     elseif(Aflag || Fflag || Sflag) 
         
         Mflag = 1;
@@ -326,8 +341,21 @@ if(x>=1 && y>=1 && x<=handles.ydim && y<=handles.xdim) % notice that x-y is reve
             guidata(hObject, handles);
             
             axes(handles.Fig_seg);
-            imshow(cImg,handles.cmap);
-            freezeColors;
+            
+            
+            imshow(handles.rawEachFrame{1,handles.counter});
+            hold on
+            h=imshow(ind2rgb(cImg,handles.cmap));
+            hold off
+            alpha=0.55.*ones(handles.xdim,handles.ydim));
+            set(h,'AlphaData',alpha);
+
+            set(gca,'NextPlot','add');
+            set(gcf,'WindowButtonDownFcn',{@figure2_WindowButtonDownFcn,handles});
+            set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
+            set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});
+            
+            clear h
             
             axes(handles.Fig_raw);
             imshow(handles.rawEachFrame{1,handles.counter});
@@ -381,17 +409,17 @@ if Mflag
         
         if Aflag
             Saveflag = 0;
-            Color = handles.cmap(m+1,:);
-            plot(handles.Fig_seg, [x0 x], [y0 y], 'LineWidth', LineWidthPlot, 'Color', Color);
+            %Color = handles.cmap(m+1,:);
+            plot(handles.Fig_seg, [x0 x], [y0 y], 'LineWidth', LineWidthPlot, 'Color', 'r');
             drawnow;
         elseif Fflag
             Saveflag = 0;
-            Color = handles.cmap(value,:);
-            plot(handles.Fig_seg, [x0 x], [y0 y], 'LineWidth', LineWidthPlot, 'Color', Color);
+            %Color = handles.cmap(value,:);
+            plot(handles.Fig_seg, [x0 x], [y0 y], 'LineWidth', LineWidthPlot, 'Color', 'w');
             drawnow;         
         elseif Sflag
             Saveflag = 0;
-            plot(handles.Fig_seg, [x0 x], [y0 y], 'LineWidth', LineWidthPlot, 'Color', [0,0,0]);
+            plot(handles.Fig_seg, [x0 x], [y0 y], 'LineWidth', LineWidthPlot, 'Color', 'k');
             drawnow;
         end
     end
@@ -430,7 +458,6 @@ if Mflag
         idx_modified = unique(nonzeros(cImg(NImg>0)));
         cImg(NImg>0)=0;
         
-        non_brokenFlag=0;
         empty_idx=[];
         max_id = handles.m;
         
@@ -456,7 +483,6 @@ if Mflag
                     end
                 end
             else
-                non_brokenFlag=1;
                 cList{idx_modified(i)}=[];
                 empty_idx=cat(2,empty_idx,idx_modified(i));
             end
@@ -476,20 +502,25 @@ if Mflag
         handles.Img=cImg;
         handles.cList = cList;
         handles.m = max_id;
-       
-        if(non_brokenFlag)
-            msgbox('Just a reminder: You choose to cut cells, but at least one cell is only pruned instead of cutted');
-        end
     end
     
     axes(handles.Fig_seg);
-    imshow(handles.Img,handles.cmap);
-    freezeColors;
+    imshow(handles.rawEachFrame{1,handles.counter});
+    hold on
+    h=imshow(ind2rgb(handles.Img,handles.cmap));
+    hold off
+    alpha=0.55.*ones(handles.xdim,handles.ydim);
+    set(h,'AlphaData',alpha);
+    set(gca,'NextPlot','add');
+    set(gcf,'WindowButtonDownFcn',{@figure2_WindowButtonDownFcn,handles});
+    set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
+    set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});
+    
+    clear h
     
     axes(handles.Fig_raw);
     imshow(handles.rawEachFrame{1,handles.counter});
-    
-    %handles = rmfield(handles,'NImg');
+
     guidata(hObject, handles);
 end
 
@@ -517,13 +548,13 @@ if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColo
 end
 
 
-% --- Executes during object creation, after setting all properties.
-function Fig_raw_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to Fig_raw (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: place code in OpeningFcn to populate Fig_raw
+% % --- Executes during object creation, after setting all properties.
+% function Fig_raw_CreateFcn(hObject, eventdata, handles)
+% % hObject    handle to Fig_raw (see GCBO)
+% % eventdata  reserved - to be defined in a future version of MATLAB
+% % handles    empty - handles not created until after all CreateFcns called
+% 
+% % Hint: place code in OpeningFcn to populate Fig_raw
 
 
 % --- Executes on mouse press over axes background.
@@ -542,46 +573,51 @@ global Saveflag;
 Saveflag = 1;
 handles = guidata(hObject);
 
-Img=handles.Img;
-cList=handles.cList;
-
-rm_idx=[];
-for i=1:1:numel(cList)
-    if(isempty(cList{i}))
-        rm_idx=cat(1,rm_idx,i);
-    end
-end
-
-if(isempty(rm_idx))
-    handles.matEachFrame{1,handles.counter}=Img;
-    handles.cellEachFrame{1,handles.counter}=cList;
-else
-    idx=setdiff(1:1:numel(cList),rm_idx);
-    nList=cell(1,numel(idx));
-    nList(:)=cList(idx);
-    Img = zeros(handles.xdim,handles.ydim);
-    for i=1:1:numel(idx)
-        Img(nList{i}.seg)=i;
-    end
-    handles.matEachFrame{1,handles.counter}=Img;
-    handles.cellEachFrame{1,handles.counter}=nList;
-    handles.Img=Img;
-    handles.cList = nList;
-end
-
+handles.matEachFrame{1,handles.counter}=handles.Img;
+handles.cellEachFrame{1,handles.counter}=handles.cList;
+    
 guidata(hObject, handles);
 
-axes(handles.Fig_seg);
-set(gca,'NextPlot','add');
-imshow(Img,handles.cmap);
-freezeColors;
+% Img=handles.Img;
+% cList=handles.cList;
+% 
+% rm_idx=[];
+% for i=1:1:numel(cList)
+%     if(isempty(cList{i}))
+%         rm_idx=cat(1,rm_idx,i);
+%     end
+% end
+% 
+% if(isempty(rm_idx))
+%     handles.matEachFrame{1,handles.counter}=Img;
+%     handles.cellEachFrame{1,handles.counter}=cList;
+% else
+%     idx=setdiff(1:1:numel(cList),rm_idx);
+%     nList=cell(1,numel(idx));
+%     nList(:)=cList(idx);
+%     Img = zeros(handles.xdim,handles.ydim);
+%     for i=1:1:numel(idx)
+%         Img(nList{i}.seg)=i;
+%     end
+%     handles.matEachFrame{1,handles.counter}=Img;
+%     handles.cellEachFrame{1,handles.counter}=nList;
+%     handles.Img=Img;
+%     handles.cList = nList;
+% end
+% 
+% guidata(hObject, handles);
 
-set(gcf,'WindowButtonDownFcn',{@figure2_WindowButtonDownFcn,handles});
-set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
-set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});
-
-axes(handles.Fig_raw);
-imshow(handles.rawEachFrame{1,handles.counter});
+% axes(handles.Fig_seg);
+% set(gca,'NextPlot','add');
+% imshow(ind2rgb(Img,handles.cmap));
+% %freezeColors;
+% 
+% set(gcf,'WindowButtonDownFcn',{@figure2_WindowButtonDownFcn,handles});
+% set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
+% set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});
+% 
+% axes(handles.Fig_raw);
+% imshow(handles.rawEachFrame{1,handles.counter});
      
 msgbox('save successfully','Infor');
 
