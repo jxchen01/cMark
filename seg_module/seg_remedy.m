@@ -56,8 +56,6 @@ global Aflag Fflag Dflag Sflag
 % Choose default command line output for seg_remedy
 handles.output = hObject;
 
-% movegui(gcf, 'north');
-
 set(handles.slider, 'Max', 10);
 SliderStepX = 1/(10-0);
 set(handles.slider, 'SliderStep', [SliderStepX 1]);
@@ -67,8 +65,6 @@ Aflag=1;
 Fflag=0;
 Dflag=0;
 Sflag=0;
-
-%set(gcf,'toolbar','figure');
 
 % Update handles structure
 guidata(hObject, handles);
@@ -87,7 +83,6 @@ function varargout = seg_remedy_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
 
 
-
 % --- Executes on button press in LoadOrgImg.
 function LoadOrgImg_Callback(hObject, eventdata, handles)
 % hObject    handle to LoadOrgImg (see GCBO)
@@ -98,7 +93,7 @@ function LoadOrgImg_Callback(hObject, eventdata, handles)
 
 if ~isequal(FileName,0)
   
-    load(FileName);
+    load([PathName,FileName]);
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%% prepare the variables, which will     %%%%%%%%%%%%%
@@ -107,13 +102,13 @@ if ~isequal(FileName,0)
     cmap=rand(1000,3);
     cmap=cmap*0.9; 
     cmap=cmap+0.1;
-    cmap(1,:)=[0,0,0];%Jianxu: set background as black, also increase the brightness 
+    cmap(1,:)=[0,0,0]; 
     
     handles = guidata(hObject);
     handles.cellEachFrame = cellEachFrame;
     handles.matEachFrame = matEachFrame;
     handles.rawEachFrame = rawEachFrame;
-    handles.FileName = FileName;
+    handles.FileName = [PathName,FileName];
     
     handles.cmap=cmap;
     handles.Maxindex = numel(rawEachFrame);
@@ -157,7 +152,7 @@ global Saveflag;
 handles = guidata(hObject);
 
 if Saveflag==0
-    choice = questdlg('Directly going back without Save will lose all the current work! Do you want to continue?',...
+    choice = questdlg('Directly going back without "Save" will lose all modifications in the current frame. Continue?',...
 	'Warning', ...
 	'Yes','No','No');
 % Handle response
@@ -170,15 +165,15 @@ if Saveflag==0
    Saveflag = 1;
 
 else
-    handles.counter = handles.counter - 1;
+    nc = handles.counter - 1;
 end
 
-if handles.counter < 1
-    handles.counter = handles.counter + 1;
+if nc < 1
     msgbox('Already in the first frame')
 else
-    handles.Img=handles.matEachFrame{1,handles.counter};
-    handles.cList=handles.cellEachFrame{1,handles.counter};
+    handles.counter = nc;
+    handles.Img=handles.matEachFrame{1,nc};
+    handles.cList=handles.cellEachFrame{1,nc};
     guidata(hObject, handles);
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%% update the visualization %%%%%%%%%%%%%%%%%%
@@ -214,7 +209,7 @@ global Saveflag;
 handles = guidata(hObject); 
 
 if Saveflag==0
-    choice = questdlg('Directly going next without Save will lose all the current work! Do you want to continue?',...
+    choice = questdlg('Directly going next without "Save" will lose all modifications in the current frame. Continue?',...
 	'Warning', ...
 	'Yes','No','No');
 % Handle response
@@ -227,15 +222,15 @@ if Saveflag==0
    Saveflag = 1;
 
 else
-    handles.counter = handles.counter + 1;
+    nc = handles.counter + 1;
 end
 
- if handles.counter > handles.Maxindex
-     handles.counter = handles.counter - 1;
+ if nc > handles.Maxindex
      msgbox('Already in the last frame') 
  else
-     handles.Img=handles.matEachFrame{1,handles.counter};
-     handles.cList=handles.cellEachFrame{1,handles.counter};
+     handles.counter = nc;
+     handles.Img=handles.matEachFrame{1,nc};
+     handles.cList=handles.cellEachFrame{1,nc};
      guidata(hObject, handles);
      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      %%%%%%%%%%%%%%%% update the visualization %%%%%%%%%%%%%%%%%%
@@ -340,14 +335,16 @@ if(x>=1 && y>=1 && x<=handles.ydim && y<=handles.xdim) % notice that x-y is reve
             handles.Img = cImg;
             guidata(hObject, handles);
             
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%%%%%%% update visualization %%%%%%%%%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
             axes(handles.Fig_seg);
-            
-            
             imshow(handles.rawEachFrame{1,handles.counter});
             hold on
             h=imshow(ind2rgb(cImg,handles.cmap));
             hold off
-            alpha=0.55.*ones(handles.xdim,handles.ydim));
+            alpha=0.55.*ones(handles.xdim,handles.ydim);
             set(h,'AlphaData',alpha);
 
             set(gca,'NextPlot','add');
@@ -384,13 +381,10 @@ if Mflag
     y0 = y;
     
     handles = guidata(hObject);
-    m=handles.m;
     
     cp = get(handles.Fig_seg, 'CurrentPoint');
     x = round(cp(1,1));
     y = round(cp(1,2));
-    
-    %if(x>=1 && y>=1 && x<=handles.ydim && y<=handles.xdim) 
     
     [xp, yp]=bresenham(x0,y0,x,y);
     if((~any(xp<1)) && (~any(xp>handles.ydim)) && (~any(yp<1)) &&(~any(yp>handles.xdim)))    
@@ -409,12 +403,10 @@ if Mflag
         
         if Aflag
             Saveflag = 0;
-            %Color = handles.cmap(m+1,:);
             plot(handles.Fig_seg, [x0 x], [y0 y], 'LineWidth', LineWidthPlot, 'Color', 'r');
             drawnow;
         elseif Fflag
             Saveflag = 0;
-            %Color = handles.cmap(value,:);
             plot(handles.Fig_seg, [x0 x], [y0 y], 'LineWidth', LineWidthPlot, 'Color', 'w');
             drawnow;         
         elseif Sflag
@@ -627,21 +619,21 @@ function SaveAll_Callback(hObject, eventdata, handles)
 % hObject    handle to SaveAll (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-choice = questdlg('Are you sure to save the present work? That will cover the original ones.', ...
-	'Save', ...
-	'Yes,please go on.','No, I will do some fixing.','No, I will do some fixing.');
+choice = questdlg('Save the current segmentation results?', 'Save', ...
+	'Yes,please go on.','No, I will make more changes.','No, I will make more changes.');
 % Handle response
 switch choice
     case 'Yes,please go on.'
+        [FileName,PathName] = uiputfile('*.mat','Select output location');
         handles = guidata(hObject);
 %         load(handles.FileName);
         cellEachFrame = handles.cellEachFrame;
         matEachFrame = handles.matEachFrame;
         rawEachFrame = handles.rawEachFrame;
-        save(handles.FileName,'matEachFrame','rawEachFrame','cellEachFrame');
+        save([PathName,FileName],'matEachFrame','rawEachFrame','cellEachFrame');
         msgbox('save successfully','Infor');
         guidata(hObject, handles);
-    case 'No, I will do some fixing.'
+    case 'No, I will make more changes.'
         return;
 end
     
@@ -658,31 +650,6 @@ global value;
 
 guidata(hObject, handles);
 % Hint: get(hObject,'Value') returns toggle state of ShowLable
-
-
-% % --- Executes during object creation, after setting all properties.
-% function edit_CreateFcn(hObject, eventdata, handles)
-% % hObject    handle to edit (see GCBO)
-% % eventdata  reserved - to be defined in a future version of MATLAB
-% % handles    empty - handles not created until after all CreateFcns called
-% 
-% % Hint: edit controls usually have a white background on Windows.
-% %       See ISPC and COMPUTER.
-% if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-%     set(hObject,'BackgroundColor','white');
-% end
-
-% % --- Executes during object creation, after setting all properties.
-% function edit2_CreateFcn(hObject, eventdata, handles)
-% % hObject    handle to edit (see GCBO)
-% % eventdata  reserved - to be defined in a future version of MATLAB
-% % handles    empty - handles not created until after all CreateFcns called
-% 
-% % Hint: edit controls usually have a white background on Windows.
-% %       See ISPC and COMPUTER.
-% if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-%     set(hObject,'BackgroundColor','white');
-% end
 
 
 % --- Executes when selected object is changed in Operation.
