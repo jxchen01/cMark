@@ -90,12 +90,16 @@ function SetLable_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 handles=guidata(hObject);
-SetLable=str2double(get(hObject,'String'));
+if(isfiled(handles,'SetLabel'))
+    msgbox('Number of Label cannot be changed');
+    return
+end
+
+SetLable=str2double(get(hObject,'String')); %%%% total number of labels
 handles.lable_inx = cell(1,SetLable);
 for i=1:1:SetLable
     handles.lable_inx{i} = [];
 end
-% handles.matFrame{handles.counter} =struct('PixelList',[]);
 handles.SetLable = SetLable;
 guidata(hObject,handles);
 
@@ -150,19 +154,22 @@ else
     load([PathName,FileName],'rawEachFrame');
     handles = guidata(hObject);
     handles.raw = rawEachFrame;
-    handles.FileName = [PathName,FileName];
+    
+    %%%%% general information %%%%%%
     handles.Maxindex = numel(rawEachFrame);
     [dimx,dimy]=size(rawEachFrame{1,1});
     handles.xdim = dimx;
     handles.ydim = dimy;
     
+    %%%%% things will be changed each time going to a different frame %%%%
+    handles.counter = 1;
+    handles.Img = rawEachFrame{1,1};
+    
+    %%%% key variables %%%%%%
     handles.matFrame = cell(1,handles.Maxindex); %%%% each entry holds the indexed pixels in that frame
     for i=1:1:handles.Maxindex
         handles.matFrame{i}=zeros(dimx,dimy);
     end
-    
-    handles.counter = 1;
-    handles.Img = rawEachFrame{1,1};
     
     handles.rgb = cell(1,numel(rawEachFrame)); %%%% used to hold images with labels
     for i=1:1:numel(rawEachFrame)
@@ -170,15 +177,19 @@ else
         handles.rgb{i}=cat(3,a,a,a); %%% initially, no labels, only grayscale images
     end
     
+    %%%% update text boxes %%%%%
+    set(handles.GoToFrame,'String',num2str(handles.counter));
+    set(handels.total_index,'String',['/',num2str(handles.Maxindex)]);
+    
     guidata(hObject, handles);
     
+    %%%%%%%%% visualization %%%%%%%%
     axes(handles.fig);
     imshow(rawEachFrame{1,1});
     
     set(gcf,'WindowButtonDownFcn',{@figure1_WindowButtonDownFcn,handles});
     set(gcf,'WindowButtonMotionFcn',{@figure1_WindowButtonMotionFcn,handles});
     set(gcf,'WindowButtonUpFcn',{@figure1_WindowButtonUpFcn,handles});
-    set(handles.GoToFrame,'String',num2str(handles.counter));
 end
     
 
@@ -191,7 +202,7 @@ function goback_Callback(hObject, eventdata, handles)
 
 handles = guidata(hObject);
 
-if handles.counter < 1
+if handles.counter == 1
     msgbox('Already in the first frame!')
 else
     handles.counter = handles.counter - 1;
@@ -215,7 +226,7 @@ function gonext_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 handles = guidata(hObject);
-if handles.counter > handles.Maxindex
+if handles.counter == handles.Maxindex
     msgbox('Already in the last frame')
 else
     handles.counter = handles.counter + 1;
@@ -240,7 +251,7 @@ function GoToFrame_Callback(hObject, eventdata, handles)
 handles=guidata(hObject,handles);
 f_idx = str2double(get(hObject,'String'));
 
-if handles.counter < 1 && handles.counter > handles.Maxindex
+if f_idx < 1 && f_idx > handles.Maxindex
     msgbox('Invalid Frame Index Number')
 else
     handles.counter = f_idx;
@@ -538,16 +549,16 @@ function Save_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 choice = questdlg('Are you sure to save the present LablePixelList? ', ...
 	'Save', ...
-	'Yes,please go on.','No, I will do some fixing.','No, I will do some fixing.');
+	'Yes,please go on.','No, I will make more changes.','No, I will make more changes.');
 
 switch choice
     case 'Yes,please go on.'
+        [FileName,PathName] = uiputfile('*.mat','Select output location');
         handles=guidata(hObject);
         lable_index=handles.lable_inx;
-        FileName = 'lable_index.mat';
-        save(FileName,'lable_index');
-        msgbox('save successfully','Infor');
+        save([PathName,FileName],'lable_index');
         guidata(hObject, handles);
-    case 'No, I will do some more fixing.'
+        msgbox('save successfully','Infor');
+    case 'No, I will make more changes.'
         return;
 end
