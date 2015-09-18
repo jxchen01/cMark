@@ -99,37 +99,51 @@ if ~isequal(FileName,0)
     %%%%%%%%%%%%% prepare the variables, which will     %%%%%%%%%%%%%
     %%%%%%%%%%%%% be carried all around by handles      %%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    cmap=rand(1000,3);
-    cmap=cmap*0.9; 
-    cmap=cmap+0.1;
-    cmap(1,:)=[0,0,0]; 
     
     handles = guidata(hObject);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%% things will only be loaded once %%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     handles.cellEachFrame = cellEachFrame;
     handles.matEachFrame = matEachFrame;
     handles.rawEachFrame = rawEachFrame;
-    handles.FileName = [PathName,FileName];
     
+    %%%% build the color map %%%%
+    est_cell=0;
+    for i=1:1:numel(cellEachFrame)
+        est_cell = max([est_cell, numel(cellEachFrame{i})]);
+    end
+    cmap=rand(ceil(est_cell*1.5),3);
+    cmap=cmap*0.9; 
+    cmap=cmap+0.1;
+    cmap(1,:)=[0,0,0];    
     handles.cmap=cmap;
+    
+    %%%%%% other necessary information %%%%%%
     handles.Maxindex = numel(rawEachFrame);
     
     [dimx,dimy]=size(matEachFrame{1,1});
     handles.xdim = dimx;
     handles.ydim = dimy;
     
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%% things will be loaded each time going to a different frame %%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     handles.counter = 1;
     handles.Img = matEachFrame{1,1};
     handles.cList = cellEachFrame{1,1};
+    handles.raw = rawEachFrame{1,1};
     
     set(handles.frame_idx,'String','1');
     set(handles.total_frame,'String',['/',num2str(handles.Maxindex)]);
     
     guidata(hObject, handles);
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%% visualization and trigger mouse gesture %%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     axes(handles.Fig_seg);
-    imshow(handles.rawEachFrame{1,1});
+    imshow(handles.raw);
     hold on
     h=imshow(ind2rgb(matEachFrame{1,1},handles.cmap));
     hold off
@@ -178,21 +192,20 @@ else
     handles.counter = nc;
     handles.Img=handles.matEachFrame{1,nc};
     handles.cList=handles.cellEachFrame{1,nc};
+    handles.raw = handles.rawEachFrame{1,nc};
     set(handles.frame_idx,'String',num2str(nc));
     guidata(hObject, handles);
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%% update the visualization %%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     axes(handles.Fig_seg);
-    set(gca,'NextPlot','add');
-
-    axes(handles.Fig_seg);
-    imshow(handles.rawEachFrame{1,handles.counter});
+    imshow(handles.raw);
     hold on
-    h=imshow(ind2rgb(handles.matEachFrame{1,handles.counter},handles.cmap));
+    h=imshow(ind2rgb(handles.Img,handles.cmap));
     hold off
     alpha=0.55.*ones(handles.xdim,handles.ydim);
     set(h,'AlphaData',alpha);
+    set(gca,'NextPlot','add'); 
     set(gcf,'WindowButtonDownFcn',{@figure2_WindowButtonDownFcn,handles});
     set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
     set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});
@@ -200,10 +213,8 @@ else
     clear h
     
     axes(handles.Fig_raw);
-    imshow(handles.rawEachFrame{1,handles.counter});
+    imshow(handles.raw);
 end
-
-
 
 % --- Executes on button press in Gonext.
 function Gonext_Callback(hObject, eventdata, handles)
@@ -236,29 +247,64 @@ end
      handles.counter = nc;
      handles.Img=handles.matEachFrame{1,nc};
      handles.cList=handles.cellEachFrame{1,nc};
+     handles.raw = handles.rawEachFrame{1,nc};
      set(handles.frame_idx,'String',num2str(nc));
      guidata(hObject, handles);
      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      %%%%%%%%%%%%%%%% update the visualization %%%%%%%%%%%%%%%%%%
      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      axes(handles.Fig_seg);
-     set(gca,'NextPlot','add');
-     
-     axes(handles.Fig_seg);
-     imshow(handles.rawEachFrame{1,handles.counter});
+     imshow(handles.raw);
      hold on
-     h=imshow(ind2rgb(handles.matEachFrame{1,handles.counter},handles.cmap));
+     h=imshow(ind2rgb(handles.Img,handles.cmap));
      hold off
      alpha=0.55.*ones(handles.xdim,handles.ydim);
      set(h,'AlphaData',alpha);
-     
+     set(gca,'NextPlot','add');
      set(gcf,'WindowButtonDownFcn',{@figure2_WindowButtonDownFcn,handles});
      set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
      set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});   
      
      axes(handles.Fig_raw);
-     imshow(handles.rawEachFrame{1,handles.counter});
+     imshow(handles.raw);
  end
+ 
+ function frame_idx_Callback(hObject, eventdata, handles)
+% hObject    handle to frame_idx (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of frame_idx as text
+%        str2double(get(hObject,'String')) returns contents of frame_idx as a double
+handles = guidata(hObject);
+nc = str2double(get(hObject,'String'));
+if(nc>1 && nc<handles.Maxindex)
+    handles.counter=nc;
+    handles.Img=handles.matEachFrame{1,nc};
+    handles.cList=handles.cellEachFrame{1,nc};
+    handles.raw = handles.rawEachFrame{1,nc};
+    guidata(hObject, handles);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%% update the visualization %%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    axes(handles.Fig_seg);
+    imshow(handles.raw);
+    hold on
+    h=imshow(ind2rgb(handles.Img,handles.cmap));
+    hold off
+    alpha=0.55.*ones(handles.xdim,handles.ydim);
+    set(h,'AlphaData',alpha);
+    set(gca,'NextPlot','add');
+    set(gcf,'WindowButtonDownFcn',{@figure2_WindowButtonDownFcn,handles});
+    set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
+    set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});
+    
+    clear h
+    
+    axes(handles.Fig_raw);
+    imshow(handles.raw);
+end
+
 
 % --- Executes during object creation, after setting all properties.
 function Fig_seg_CreateFcn(hObject, eventdata, handles)
@@ -300,10 +346,7 @@ if(x>=1 && y>=1 && x<=handles.ydim && y<=handles.xdim) % notice that x-y is reve
         
         Mflag = 1;
         %%%%%% after button down, prepare necessary information for
-        %%%%%% modification, including m and NImg, 
-        m=max(handles.Img(:));
-        handles.m = m;
-        
+        %%%%%% modification, including m and NImg,         
         NImg = zeros(handles.xdim,handles.ydim);
         NImg(y,x)=1;
         handles.NImg=NImg;
@@ -311,15 +354,13 @@ if(x>=1 && y>=1 && x<=handles.ydim && y<=handles.xdim) % notice that x-y is reve
         
         %%%%%% real-time display according to different types of modification
         if Aflag
-            Color = handles.cmap(handles.m+1,:);
-            plot(handles.Fig_seg, x, y, 'Color', Color);
+            plot(handles.Fig_seg, x, y, 'Color', 'r');
             drawnow
         elseif Fflag         
-            Color = handles.cmap(value,:);
-            plot(handles.Fig_seg, x, y, 'Color', Color);
+            plot(handles.Fig_seg, x, y, 'Color', 'w');
             drawnow   
-        elseif Dflag || Sflag
-            plot(handles.Fig_seg, x, y, 'Color', [0,0,0]);
+        elseif Sflag
+            plot(handles.Fig_seg, x, y, 'Color', 'k');
             drawnow;
         end
         
@@ -327,16 +368,16 @@ if(x>=1 && y>=1 && x<=handles.ydim && y<=handles.xdim) % notice that x-y is reve
         y0 = y;
     elseif(Dflag)
         cImg = handles.Img;
-        idx_rm = cImg(y,x);
+        idx_rm = cImg(y,x);  
         if(idx_rm>0)
+            max_id = numel(handles.cList);
             cList = handles.cList;
             cImg(ismember(cImg,idx_rm))=0;
-            for i=idx_rm+1:1:handles.m
+            for i=idx_rm+1:1:max_id
                 cImg(ismember(cImg,i))=i-1;
                 cList{i-1}=cList{i};
             end
-            cList(handles.m)=[];
-            handles.m = handles.m-1;
+            cList(max_id)=[];
             handles.cList = cList;
             handles.Img = cImg;
             guidata(hObject, handles);
@@ -346,7 +387,7 @@ if(x>=1 && y>=1 && x<=handles.ydim && y<=handles.xdim) % notice that x-y is reve
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
             axes(handles.Fig_seg);
-            imshow(handles.rawEachFrame{1,handles.counter});
+            imshow(handles.raw);
             hold on
             h=imshow(ind2rgb(cImg,handles.cmap));
             hold off
@@ -361,7 +402,7 @@ if(x>=1 && y>=1 && x<=handles.ydim && y<=handles.xdim) % notice that x-y is reve
             clear h
             
             axes(handles.Fig_raw);
-            imshow(handles.rawEachFrame{1,handles.counter});
+            imshow(handles.raw);
         end
     end    
 else
@@ -438,9 +479,9 @@ if Mflag
     handles = guidata(hObject);
     
     if Aflag            
-        handles.m=handles.m+1;
-        handles.Img(handles.NImg>0)=handles.m; % update matrix 
-        handles.cList{1,handles.m}=struct('seg',handles.NImg,'size',nnz(handles.NImg)); % update cell
+        max_id = 1 + numel(handles.cList);
+        handles.Img(handles.NImg>0)=max_id; % update matrix 
+        handles.cList{1,max_id}=struct('seg',handles.NImg,'size',nnz(handles.NImg)); % update cell
     elseif Fflag
         %Need User first choose the intend-to-fix cell, that's to say,
         %first buttondown on the specific cell
@@ -457,7 +498,7 @@ if Mflag
         cImg(NImg>0)=0;
         
         empty_idx=[];
-        max_id = handles.m;
+        max_id = numel(handles.cList);
         
         for i=1:1:numel(idx_modified)
             sRegion = ismember(cImg,idx_modified(i));
@@ -499,11 +540,10 @@ if Mflag
         
         handles.Img=cImg;
         handles.cList = cList;
-        handles.m = max_id;
     end
     
     axes(handles.Fig_seg);
-    imshow(handles.rawEachFrame{1,handles.counter});
+    imshow(handles.raw);
     hold on
     h=imshow(ind2rgb(handles.Img,handles.cmap));
     hold off
@@ -517,7 +557,7 @@ if Mflag
     clear h
     
     axes(handles.Fig_raw);
-    imshow(handles.rawEachFrame{1,handles.counter});
+    imshow(handles.raw);
 
     guidata(hObject, handles);
 end
@@ -529,7 +569,7 @@ function slider_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 x=round(get(hObject,'Value')) + 1;
-set(handles.edit,'String',num2str(x));
+set(handles.slider_value,'String',num2str(x));
 % Hints: get(hObject,'Value') returns position of slider
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
 
@@ -564,50 +604,8 @@ handles = guidata(hObject);
 
 handles.matEachFrame{1,handles.counter}=handles.Img;
 handles.cellEachFrame{1,handles.counter}=handles.cList;
-    
+
 guidata(hObject, handles);
-
-% Img=handles.Img;
-% cList=handles.cList;
-% 
-% rm_idx=[];
-% for i=1:1:numel(cList)
-%     if(isempty(cList{i}))
-%         rm_idx=cat(1,rm_idx,i);
-%     end
-% end
-% 
-% if(isempty(rm_idx))
-%     handles.matEachFrame{1,handles.counter}=Img;
-%     handles.cellEachFrame{1,handles.counter}=cList;
-% else
-%     idx=setdiff(1:1:numel(cList),rm_idx);
-%     nList=cell(1,numel(idx));
-%     nList(:)=cList(idx);
-%     Img = zeros(handles.xdim,handles.ydim);
-%     for i=1:1:numel(idx)
-%         Img(nList{i}.seg)=i;
-%     end
-%     handles.matEachFrame{1,handles.counter}=Img;
-%     handles.cellEachFrame{1,handles.counter}=nList;
-%     handles.Img=Img;
-%     handles.cList = nList;
-% end
-% 
-% guidata(hObject, handles);
-
-% axes(handles.Fig_seg);
-% set(gca,'NextPlot','add');
-% imshow(ind2rgb(Img,handles.cmap));
-% %freezeColors;
-% 
-% set(gcf,'WindowButtonDownFcn',{@figure2_WindowButtonDownFcn,handles});
-% set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
-% set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});
-% 
-% axes(handles.Fig_raw);
-% imshow(handles.rawEachFrame{1,handles.counter});
-     
 msgbox('save successfully','Infor');
 
 
@@ -665,42 +663,3 @@ switch ts
         Sflag=0;
 end
 guidata(hObject, handles);
-
-
-
-function frame_idx_Callback(hObject, eventdata, handles)
-% hObject    handle to frame_idx (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of frame_idx as text
-%        str2double(get(hObject,'String')) returns contents of frame_idx as a double
-handles = guidata(hObject);
-nc = str2double(get(hObject,'String'));
-if(nc>1 && nc<handles.Maxindex)
-    handles.counter=nc;
-    handles.Img=handles.matEachFrame{1,nc};
-    handles.cList=handles.cellEachFrame{1,nc};
-    guidata(hObject, handles);
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%%%%%%%%%% update the visualization %%%%%%%%%%%%%%%%%%
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    axes(handles.Fig_seg);
-    set(gca,'NextPlot','add');
-
-    axes(handles.Fig_seg);
-    imshow(handles.rawEachFrame{1,handles.counter});
-    hold on
-    h=imshow(ind2rgb(handles.matEachFrame{1,handles.counter},handles.cmap));
-    hold off
-    alpha=0.55.*ones(handles.xdim,handles.ydim);
-    set(h,'AlphaData',alpha);
-    set(gcf,'WindowButtonDownFcn',{@figure2_WindowButtonDownFcn,handles});
-    set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
-    set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});
-    
-    clear h
-    
-    axes(handles.Fig_raw);
-    imshow(handles.rawEachFrame{1,handles.counter});
-end
