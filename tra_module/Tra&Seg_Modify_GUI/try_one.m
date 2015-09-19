@@ -22,7 +22,7 @@ function varargout = try_one(varargin)
 
 % Edit the above text to modify the response to help try_one
 
-% Last Modified by GUIDE v2.5 17-Aug-2015 12:38:53
+% Last Modified by GUIDE v2.5 18-Sep-2015 22:31:27
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -69,7 +69,6 @@ guidata(hObject, handles);
 % UIWAIT makes try_one wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
 
-
 % --- Outputs from this function are returned to the command line.
 function varargout = try_one_OutputFcn(hObject, eventdata, handles) 
 % varargout  cell array for returning output args (see VARARGOUT);
@@ -79,7 +78,6 @@ function varargout = try_one_OutputFcn(hObject, eventdata, handles)
 
 % Get default command line output from handles structure
 varargout{1} = handles.output;
-
 
 % --- Executes during object creation, after setting all properties.
 function axes1_CreateFcn(hObject, eventdata, handles)
@@ -96,8 +94,6 @@ function axes2_CreateFcn(hObject, eventdata, handles)
 % handles    empty - handles not created until after all CreateFcns called
 global Mflag Aflag Fflag Sflag Dflag Saveflag;
 Mflag = 0;
-% PaintFlag = 0;
-% Eflag = 0;
 Aflag = 0;
 Fflag = 0;
 Sflag = 0;
@@ -114,93 +110,103 @@ function axes2_ButtonDownFcn(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 
-% --- Executes on button press in Display.
+% --- Executes on button press in Display. %%% load data
 function Display_Callback(hObject, eventdata, handles)
 % hObject    handle to Display (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-colormapName = 'color.mat';
 [FileName,PathName] = uigetfile('*.mat','Select the MATLAB code file');
 if isequal(FileName,0)
-   msgbox('User selected Cancel');
+   return
 else
-   load([PathName,FileName]);
-   load(colormapName);
    handles = guidata(hObject);
-   handles.colormap = colormap.colormap;
-   s = size(handles.colormap);
-   handles.whitecolor = s(1) - 1;  %color white
-   handles.colormapName = colormapName;
+   load([PathName,FileName]);
+
+   %%%% data variables %%%%
    handles.cellEachFrame = cellEachFrame;
    handles.idEachFrame = idEachFrame;
    handles.matEachFrame = matEachFrame;
    handles.rawEachFrame = rawEachFrame;
-   handles.FileName = FileName;
+   
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %%%%% key variables for the whole program %%%%%%
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   handles.FileName = [PathName,FileName];
    handles.action = 0;
    handles.action2 = 0;
    handles.autosave = 0;
    handles.certaincell = 0;
    handles.certainidx = 1;
-   % get the present max index 
-   handles.Maxindex = numel(rawEachFrame);
-   handles.Max = 0;
-   for i = 1:handles.Maxindex
-       Max = max(max(idEachFrame{1, i}));
-       if Max > handles.Max
-          handles.Max = Max;
-       end
-   end
-   % set the initial two frames
-   handles.counter1 = 1;
-   handles.counter2 = 2;
    
    [dimx,dimy]=size(matEachFrame{1,2});
    handles.xdim = dimx;
    handles.ydim = dimy;
+   
+   handles.Maxindex = numel(rawEachFrame); % max frame index
+   handles.Max = 0; % max id
+   for i = 1:handles.Maxindex
+       Max = max(idEachFrame{1, i}(:));
+       if Max > handles.Max
+          handles.Max = Max;
+       end
+   end
+   
+   % build color map 
+   cmap=rand(ceil(handles.Max*1.5),3);
+   cmap=cmap*0.9;
+   cmap=cmap+0.1;
+   cmap(1,:)=[0,0,0];
+   handles.colormap=cmap;
+   
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %%%%%%%%%% set the initial two frames %%%%%%%%%%%%
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   handles.counter1 = 1;
+   handles.counter2 = 2;
    
    handles.Img = matEachFrame{1,2};
    handles.idImg = idEachFrame{1,2};
    handles.cList = cellEachFrame{1,2};
     
    axes(handles.axes1);
-   imshow(handles.idEachFrame{1,handles.counter1} + 1,handles.colormap);
+   imshow(ind2rgb(handles.idEachFrame{1,handles.counter1} + 1,handles.colormap));
    
    axes(handles.axes2);
-   imshow(handles.idEachFrame{1,handles.counter2} + 1,handles.colormap);
+   imshow(ind2rgb(handles.idEachFrame{1,handles.counter2} + 1,handles.colormap));
    set(gca,'NextPlot','replace');
-%    freezeColors;
-   
+
+   set(handles.GotoFrame,'String',num2str(handles.counter1));
+   set(handles.GotoFrame2,'String',num2str(handles.counter2));
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %%%%%% set up the window for potential segmentation correction %%%%%%
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    % let the user be able to draw on the image
    set(gcf,'WindowButtonDownFcn',{@figure2_WindowButtonDownFcn,handles});
    set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
    set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});
    
-   Str1 = num2str(handles.counter1);
-   set(handles.GotoFrame,'String',Str1);
-   Str2 = num2str(handles.counter2);
-   set(handles.GotoFrame2,'String',Str2);
    guidata(hObject, handles);
 end
 
 
-% --- Executes on button press in Gocertain.
-function Gocertain_Callback(hObject, eventdata, handles)
-% hObject    handle to Gocertain (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-handles = guidata(hObject);
-% display a certain cell's trajectory
-if handles.certaincell == 1
-    tempidEachFrame = handles.idEachFrame;
-    temp = ismember(tempidEachFrame{1, handles.counter1},handles.certainidx);  % select the certain cell's area
-    mat = tempidEachFrame{1, handles.counter1}; 
-    mat(mat>0) = handles.whitecolor;  % set the color of other cells white
-    mat(temp>0) = handles.certainidx;  % give the certain cell a certain color
-    tempidEachFrame{1, handles.counter1} = mat;  % updated matrix
-    axes(handles.axes1);
-    imshow(tempidEachFrame{1,handles.counter1} + 1,handles.colormap);
-end
-guidata(hObject, handles);
+% % --- Executes on button press in Gocertain.
+% function Gocertain_Callback(hObject, eventdata, handles)
+% % hObject    handle to Gocertain (see GCBO)
+% % eventdata  reserved - to be defined in a future version of MATLAB
+% % handles    structure with handles and user data (see GUIDATA)
+% handles = guidata(hObject);
+% % display a certain cell's trajectory
+% if handles.certaincell == 1
+%     tempidEachFrame = handles.idEachFrame;
+%     temp = ismember(tempidEachFrame{1, handles.counter1},handles.certainidx);  % select the certain cell's area
+%     mat = tempidEachFrame{1, handles.counter1}; 
+%     mat(mat>0) = handles.whitecolor;  % set the color of other cells white
+%     mat(temp>0) = handles.certainidx;  % give the certain cell a certain color
+%     tempidEachFrame{1, handles.counter1} = mat;  % updated matrix
+%     axes(handles.axes1);
+%     imshow(tempidEachFrame{1,handles.counter1} + 1,handles.colormap);
+% end
+% guidata(hObject, handles);
 
 
 % --- Executes on button press in Certaincell.
@@ -211,6 +217,10 @@ function Certaincell_Callback(hObject, eventdata, handles)
 
 % Hint: get(hObject,'Value') returns toggle state of Certaincell
 handles = guidata(hObject);
+if(~isfield(handles,'FileName'))
+    return
+end
+
 val = get(hObject,'Value');
 if val == 1
     handles.certaincell = 1;
@@ -228,25 +238,21 @@ function Certainidx_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of Certainidx as text
 %        str2double(get(hObject,'String')) returns contents of Certainidx as a double
 handles = guidata(hObject);
+if(handles.certaincell==0)
+    msgbox('Not in the single trajectory display mode');
+    return
+end
+
+if(~isfield(handles,'FileName'))
+    return
+end
+
 val = str2double(get(hObject,'String'));
 if val < 1 || val > handles.Max
-    msgbox('wrong index','Error','error');
+    msgbox(['Invalid trajecotry index, the max value is ',num2str(handles.Max)],'Error','error');
 else
     handles.certainidx = val;
-end
-guidata(hObject, handles);
-
-
-% --- Executes during object creation, after setting all properties.
-function Certainidx_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to Certainidx (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
+    guidata(hObject, handles);
 end
 
 
@@ -256,34 +262,32 @@ function Gonext_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 handles = guidata(hObject); 
-handles.counter1 = handles.counter1 + 1;
- if handles.counter1 > handles.Maxindex
-     handles.counter1 = handles.counter1 - 1;
-     msgbox('Wrong index','Error','error') 
- else
-     Emstr = ''; 
-     set(handles.SN,'String',Emstr);
-     set(handles.Preid,'String',Emstr);
-     set(handles.Prechild,'String',Emstr);
-     set(handles.Preparent,'String',Emstr);
-     handles.action = 0;
-     if handles.certaincell == 1
-         tempidEachFrame = handles.idEachFrame;
-         temp = ismember(tempidEachFrame{1, handles.counter1},handles.certainidx);
-         mat = tempidEachFrame{1, handles.counter1}; 
-         mat(mat>0) = handles.whitecolor;
-         mat(temp>0) = handles.certainidx;
-         tempidEachFrame{1, handles.counter1} = mat; % updated matrix
-         axes(handles.axes1);
-         imshow(tempidEachFrame{1,handles.counter1} + 1,handles.colormap);
-     else
-         axes(handles.axes1);
-         imshow(handles.idEachFrame{1,handles.counter1} + 1, handles.colormap);    
-     end
-         Str=num2str(handles.counter1);
-         set(handles.GotoFrame,'String',Str);
-         guidata(hObject, handles);
- end
+if(~isfield(handles,'FileName'))
+    return
+end
+
+if handles.counter1 == handles.Maxindex
+    msgbox('Already in the last frame','Error','error');
+else
+    handles.counter1 = handles.counter1 + 1;
+    set(handles.Preid,'String',[]);
+    set(handles.Prechild,'String',[]);
+    set(handles.Preparent,'String',[]);
+    handles.action = 0;
+    if handles.certaincell == 1
+        tempidEachFrame = handles.idEachFrame;
+        temp = ismember(tempidEachFrame{1, handles.counter1},handles.certainidx);
+        zz=zeros(handles.xdim,handles.ydim);
+        axes(handles.axes1);
+        imshow(cat(3,temp,zz,zz));
+    else
+        axes(handles.axes1);
+        imshow(ind2rgb(handles.idEachFrame{1,handles.counter1} + 1, handles.colormap));
+    end
+    Str=num2str(handles.counter1);
+    set(handles.GotoFrame,'String',Str);
+    guidata(hObject, handles);
+end
 
 % --- Executes on button press in Goback.
 function Goback_Callback(hObject, eventdata, handles)
@@ -291,13 +295,15 @@ function Goback_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 handles = guidata(hObject);
-handles.counter1 = handles.counter1 - 1;
-if handles.counter1 < 1
-    handles.counter1 = handles.counter1 + 1;
-    msgbox('Wrong index','Error','error') 
+if(~isfield(handles,'FileName'))
+    return
+end
+
+if handles.counter1 == 1
+    msgbox('Already in the first frame','Error','error') 
 else
+    handles.counter1 = handles.counter1 - 1;
     Emstr = ''; 
-    set(handles.SN,'String',Emstr);
     set(handles.Preid,'String',Emstr);
     set(handles.Prechild,'String',Emstr);
     set(handles.Preparent,'String',Emstr);
@@ -305,86 +311,17 @@ else
     if handles.certaincell == 1
         tempidEachFrame = handles.idEachFrame;
         temp = ismember(tempidEachFrame{1, handles.counter1},handles.certainidx);
-        mat = tempidEachFrame{1, handles.counter1}; 
-        mat(mat>0) = handles.whitecolor;
-        mat(temp>0) = handles.certainidx;
-        tempidEachFrame{1, handles.counter1} = mat; % updated matrix
+        zz=zeros(handles.xdim,handles.ydim);
         axes(handles.axes1);
-        imshow(tempidEachFrame{1,handles.counter1} + 1,handles.colormap);
+        imshow(cat(3,temp,zz,zz));
     else    
         axes(handles.axes1);
         imshow(handles.idEachFrame{1,handles.counter1} + 1, handles.colormap);
     end
-        Str=num2str(handles.counter1);
-        set(handles.GotoFrame,'String',Str);
-        guidata(hObject, handles);
-end
-
-
-% --- Executes on button press in Gonext2.
-function Gonext2_Callback(hObject, eventdata, handles)
-% hObject    handle to Gonext2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-handles = guidata(hObject); 
-handles.counter2 = handles.counter2 + 1;
- if handles.counter2 > handles.Maxindex
-     handles.counter2 = handles.counter2 - 1;
-     msgbox('Wrong index','Error','error') 
- else
-    Emstr = ''; 
-    set(handles.SN2,'String',Emstr);
-    set(handles.Postid,'String',Emstr);
-    set(handles.Postchild,'String',Emstr);
-    set(handles.Postparent,'String',Emstr);
-    handles.action2 = 0;
-    axes(handles.axes2);
-    set(gca,'NextPlot','replace');
-    imshow(handles.idEachFrame{1,handles.counter2} + 1, handles.colormap);
-%     freezeColors;  
-    set(gcf,'WindowButtonDownFcn',{@figure2_WindowButtonDownFcn,handles});
-    set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
-    set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});  
-    Str=num2str(handles.counter2);
-    set(handles.GotoFrame2,'String',Str);
-    handles.Img=handles.matEachFrame{1,handles.counter2};
-    handles.idImg = handles.idEachFrame{1,handles.counter2};
-    handles.cList=handles.cellEachFrame{1,handles.counter2};
-    guidata(hObject, handles);
- end
-
-% --- Executes on button press in Goback2.
-function Goback2_Callback(hObject, eventdata, handles)
-% hObject    handle to Goback2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-handles = guidata(hObject);
-handles.counter2 = handles.counter2 - 1;
-if handles.counter2 < 1
-    handles.counter2 = handles.counter2 + 1;
-    msgbox('Wrong index','Error','error') 
-else
-    Emstr = ''; 
-    set(handles.SN2,'String',Emstr);
-    set(handles.Postid,'String',Emstr);
-    set(handles.Postchild,'String',Emstr);
-    set(handles.Postparent,'String',Emstr);
-    handles.action2 = 0;
-    axes(handles.axes2);
-    set(gca,'NextPlot','replace');
-    imshow(handles.idEachFrame{1,handles.counter2} + 1, handles.colormap);
-%     freezeColors;  
-    set(gcf,'WindowButtonDownFcn',{@figure2_WindowButtonDownFcn,handles});
-    set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
-    set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});  
-    Str=num2str(handles.counter2);
-    set(handles.GotoFrame2,'String',Str);
-    handles.Img=handles.matEachFrame{1,handles.counter2};
-    handles.idImg = handles.idEachFrame{1, handles.counter2};
-    handles.cList=handles.cellEachFrame{1,handles.counter2};
+    Str=num2str(handles.counter1);
+    set(handles.GotoFrame,'String',Str);
     guidata(hObject, handles);
 end
-
 
 
 function GotoFrame_Callback(hObject, eventdata, handles)
@@ -395,26 +332,106 @@ function GotoFrame_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of GotoFrame as text
 %        str2double(get(hObject,'String')) returns contents of GotoFrame as a double
 handles = guidata(hObject);
+if(~isfield(handles,'FileName'))
+    return
+end
+
 % get the index of a certain frame
 val = get(hObject, 'String');
 idxFrame = str2double(val);
 if idxFrame < 1 || idxFrame > handles.Maxindex
-    msgbox('wrong index','Error','error');
+    msgbox(['Invalide index, the max index value is ',num2str(handles.Maxindex)],'Error','error');
 else
-    handles.idxFrame1 = idxFrame;
+    handles.counter1 = idxFrame;
+    
+    axes(handles.axes1);
+    set(handles.Preid,'String',[]);
+    set(handles.Prechild,'String',[]);
+    set(handles.Preparent,'String',[]);
+    handles.action = 0;
+    if handles.certaincell == 1
+        tempidEachFrame = handles.idEachFrame;
+        temp = ismember(tempidEachFrame{1, handles.counter1},handles.certainidx);
+        zz=zeros(handles.xdim,handles.ydim);
+        axes(handles.axes1);
+        imshow(cat(3,temp,zz,zz));
+    else
+        imshow(ind2rgb(handles.idEachFrame{1,handles.counter1} + 1,handles.colormap));
+    end
+    guidata(hObject, handles);
 end
-guidata(hObject, handles);
 
-% --- Executes during object creation, after setting all properties.
-function GotoFrame_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to GotoFrame (see GCBO)
+
+% --- Executes on button press in Gonext2.
+function Gonext2_Callback(hObject, eventdata, handles)
+% hObject    handle to Gonext2 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
+% handles    structure with handles and user data (see GUIDATA)
+handles = guidata(hObject); 
+if(~isfield(handles,'FileName'))
+    return
+end
 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
+if handles.counter2 == handles.Maxindex
+    msgbox('Already in the last frame','Error','error')
+else
+    handles.action2 = 0;
+    handles.counter2 = handles.counter2 + 1;
+    set(handles.Postid,'String',[]);
+    set(handles.Postchild,'String',[]);
+    set(handles.Postparent,'String',[]);
+    set(handles.GotoFrame2,'String',num2str(handles.counter2));
+    
+    %%%% update visualization %%%%
+    axes(handles.axes2);
+    set(gca,'NextPlot','replace');
+    imshow(ind2rgb(handles.idEachFrame{1,handles.counter2} + 1, handles.colormap));
+ 
+    %%%% prepare for segmentation correction
+    set(gcf,'WindowButtonDownFcn',{@figure2_WindowButtonDownFcn,handles});
+    set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
+    set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});
+    
+    handles.Img=handles.matEachFrame{1,handles.counter2};
+    handles.idImg = handles.idEachFrame{1,handles.counter2};
+    handles.cList=handles.cellEachFrame{1,handles.counter2};
+    
+    guidata(hObject, handles);
+end
+
+
+% --- Executes on button press in Goback2.
+function Goback2_Callback(hObject, eventdata, handles)
+% hObject    handle to Goback2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles = guidata(hObject);
+
+if handles.counter2 == 1
+    msgbox('Already in the first frame','Error','error') 
+else
+    handles.action2 = 0;
+    handles.counter2 = handles.counter2 - 1;
+    set(handles.Postid,'String',[]);
+    set(handles.Postchild,'String',[]);
+    set(handles.Postparent,'String',[]);
+    set(handles.GotoFrame2,'String',num2str(handles.counter2));
+    
+    %%%%% update visualization %%%%
+    axes(handles.axes2);
+    set(gca,'NextPlot','replace');
+    imshow(ind2rgb(handles.idEachFrame{1,handles.counter2} + 1, handles.colormap));
+
+    %%%%% prepare for segmentation correction %%%%%
+    set(gcf,'WindowButtonDownFcn',{@figure2_WindowButtonDownFcn,handles});
+    set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
+    set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});  
+    
+    handles.Img=handles.matEachFrame{1,handles.counter2};
+    handles.idImg = handles.idEachFrame{1, handles.counter2};
+    handles.cList=handles.cellEachFrame{1,handles.counter2};
+    
+    guidata(hObject, handles);
 end
 
 
@@ -426,85 +443,37 @@ function GotoFrame2_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of GotoFrame2 as text
 %        str2double(get(hObject,'String')) returns contents of GotoFrame2 as a double
 handles = guidata(hObject);
+if(~isfield(handles,'FileName'))
+    return
+end
+
 % get the index of a certain frame
 val = get(hObject, 'String');
 idxFrame = str2double(val);
 if idxFrame < 1 || idxFrame > handles.Maxindex
-    msgbox('wrong index','Error','error');
+    msgbox(['Invalide index, the max index value is ',num2str(handles.Maxindex)],'Error','error');
 else
-    handles.idxFrame2 = idxFrame;
+    handles.action2 = 0;
+    handles.counter2 = idxFrame;
+    set(handles.Postid,'String',[]);
+    set(handles.Postchild,'String',[]);
+    set(handles.Postparent,'String',[]);
+    
+    axes(handles.axes2);
+    set(gca,'NextPlot','replace');
+    imshow(ind2rgb(handles.idEachFrame{1,handles.counter2} + 1,handles.colormap));
+ 
+    %%%% prepare for segmentation correction %%%%
+    set(gcf,'WindowButtonDownFcn',{@figure2_WindowButtonDownFcn,handles});
+    set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
+    set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});
+
+    handles.Img=handles.matEachFrame{1,handles.counter2};
+    handles.idImg = handles.idEachFrame{1, handles.counter2};
+    handles.cList=handles.cellEachFrame{1,handles.counter2};
+    guidata(hObject, handles);
 end
-guidata(hObject, handles);
 
-% --- Executes during object creation, after setting all properties.
-function GotoFrame2_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to GotoFrame2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes on button press in GoDirect.
-function GoDirect_Callback(hObject, eventdata, handles)
-% hObject    handle to GoDirect (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-handles = guidata(hObject);
-handles.counter1 = handles.idxFrame1;
-axes(handles.axes1);
-Emstr = ''; 
-set(handles.SN,'String',Emstr);
-set(handles.Preid,'String',Emstr);
-set(handles.Prechild,'String',Emstr);
-set(handles.Preparent,'String',Emstr);
-handles.action = 0;
-if handles.certaincell == 1
-    tempidEachFrame = handles.idEachFrame;
-    temp = ismember(tempidEachFrame{1, handles.counter1},handles.certainidx);
-    mat = tempidEachFrame{1, handles.counter1}; 
-    mat(mat>0) = handles.whitecolor;
-    mat(temp>0) = handles.certainidx;
-    tempidEachFrame{1, handles.counter1} = mat; % updated matrix
-    axes(handles.axes1);
-    imshow(tempidEachFrame{1,handles.counter1} + 1,handles.colormap);
-else
-    imshow(handles.idEachFrame{1,handles.counter1} + 1,handles.colormap);
-    Str=num2str(handles.counter1);
-    set(handles.GotoFrame,'String',Str);
-end
-guidata(hObject, handles);
-
-% --- Executes on button press in GoDirect2.
-function GoDirect2_Callback(hObject, eventdata, handles)
-% hObject    handle to GoDirect2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-handles = guidata(hObject);
-Emstr = ''; 
-set(handles.SN,'String',Emstr);
-set(handles.Postid,'String',Emstr);
-set(handles.Postchild,'String',Emstr);
-set(handles.Postparent,'String',Emstr);
-handles.action2 = 0;
-handles.counter2 = handles.idxFrame2;
-axes(handles.axes2);
-set(gca,'NextPlot','replace');
-imshow(handles.idEachFrame{1,handles.counter2} + 1,handles.colormap);
-% freezeColors;  
-set(gcf,'WindowButtonDownFcn',{@figure2_WindowButtonDownFcn,handles});
-set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
-set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});  
-Str=num2str(handles.counter2);
-set(handles.GotoFrame2,'String',Str);
-handles.Img=handles.matEachFrame{1,handles.counter2};
-handles.idImg = handles.idEachFrame{1, handles.counter2};
-handles.cList=handles.cellEachFrame{1,handles.counter2};
-guidata(hObject, handles);
 
 
 % --- Executes on button press in RawIm.
@@ -538,7 +507,7 @@ imshow(rawimage);
 hold on
 h = imshow(rgb);
 hold off
-alpha=0.3.*ones(M, N);
+alpha=0.5.*ones(M, N);
 set(h,'AlphaData',alpha);
 set(figure(handles.counter1),'NumberTitle','off','Name',str) ; 
 guidata(hObject, handles);
@@ -573,15 +542,14 @@ imshow(rawimage);
 hold on
 h = imshow(rgb);
 hold off
-alpha=0.3.*ones(M, N);
+alpha=0.5.*ones(M, N);
 set(h,'AlphaData',alpha);
 set(figure(handles.counter2),'NumberTitle','off','Name',str) ; 
 guidata(hObject, handles);
 
 
 
-
-%% Modify segmentation
+% Modify segmentation
 % --- Executes on mouse press over figure background, over a disabled or
 % --- inactive control, or over an axes background.
 function figure2_WindowButtonDownFcn(hObject, eventdata, handles)
@@ -639,7 +607,6 @@ if(x>=1 && y>=1 && x<=handles.ydim && y<=handles.xdim) % notice that x-y is reve
 else
     Mflag=0;
 end
-
 
 % --- Executes on mouse motion over figure - except title and menu.
 function figure2_WindowButtonMotionFcn(hObject, eventdata, handles)
@@ -711,7 +678,6 @@ if Mflag
     
     end
 end
-
 
 % --- Executes on mouse press over figure background, over a disabled or
 % --- inactive control, or over an axes background.
@@ -871,8 +837,7 @@ if Mflag
 end
 
 
-
-%% Select two certain cells
+%%%% Select two cells %%%%%
 % --- Executes on button press in Select.
 function Select_Callback(hObject, eventdata, handles)
 % hObject    handle to Select (see GCBO)
@@ -882,15 +847,17 @@ handles = guidata(hObject);
 str = ['handles.matEachFrame{1,',num2str(handles.counter1),'}'];
 content = eval(str);
 content = content';
+
 % select a reference cell and get its location
 axes(handles.axes1);
 Loc = [-1 -1];
 while (Loc(1)<0 || Loc(1)>512) || (Loc(2)<0 || Loc(2)>256)
     Loc = int16(ginput(1));disp(Loc);
 end
-idx = content(Loc(1),Loc(2));disp(idx);
-if idx >= 0 && idx <= 0
-    msgbox('Please click on a cell!','Error','error');
+idx = content(Loc(1),Loc(2));%disp(idx);
+
+if idx<1e-5
+    msgbox('Please click on a cell','Error','error');
 else
     % update the display of parameters
     handles.preidx = idx;
@@ -898,31 +865,15 @@ else
     Preid = num2str(handles.cellEachFrame{1,handles.counter1}{1,temp}.id);
     Prechild = handles.cellEachFrame{1,handles.counter1}{1,temp}.child;
     CSiz = size(Prechild);
-    if isempty(Prechild)
-        Cstr = '';
-    else
-        handles.CSiz = CSiz(1);
-        Cstr = '';
-        for i = 1:handles.CSiz
-            Cstr = [Cstr,' Frame ',num2str(Prechild(i,1)),' Cell ',num2str(Prechild(i,2))];
-        end
-    end
+    handles.CSiz = CSiz(1);
+    
     Preparent = handles.cellEachFrame{1,handles.counter1}{1,temp}.parent;
     PSiz = size(Preparent);
-    if isempty(Preparent)
-        Pstr = '';
-    else
-        handles.PSiz = PSiz(1);
-        Pstr = '';
-        for j = 1:handles.PSiz
-            Pstr = [Pstr,' Frame ',num2str(Preparent(j,1)),' Cell ',num2str(Preparent(j,2))];
-        end
-    end
-    SNstr = num2str(temp);
+    handles.PSiz = PSiz(1);
+    
     set(handles.Preid,'String',Preid);
-    set(handles.Prechild,'String',Cstr);
-    set(handles.Preparent,'String',Pstr);
-    set(handles.SN,'String',SNstr);
+    set(handles.Prechild,'String',handles.CSiz);
+    set(handles.Preparent,'String',handles.PSiz);
     handles.action = 1;
     guidata(hObject, handles);
 end
@@ -936,6 +887,7 @@ handles = guidata(hObject);
 str = ['handles.matEachFrame{1,',num2str(handles.counter2),'}'];
 content = eval(str);
 content = content';
+
 % select a corresponding cell and get its location
 axes(handles.axes2);
 Loc = [-1 -1];
@@ -1312,7 +1264,6 @@ function Fusion_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 handles = guidata(hObject);
-% load(handles.colormapName);
 if handles.action == 0
     msgbox('Please select the reference cell!')
 else if handles.action2 == 0
@@ -1904,3 +1855,12 @@ function BrushSize_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in consecutive.
+function consecutive_Callback(hObject, eventdata, handles)
+% hObject    handle to consecutive (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of consecutive
