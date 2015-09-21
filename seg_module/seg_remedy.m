@@ -415,7 +415,7 @@ function figure2_WindowButtonMotionFcn(hObject, eventdata, handles)
 % hObject    handle to Fig_seg (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-global Mflag x0 y0 x y Aflag Fflag Dflag Sflag value Saveflag; 
+global Mflag x0 y0 x y Aflag Fflag Sflag Saveflag; 
 
 if isMultipleCall();  
     return;  
@@ -471,7 +471,7 @@ function figure2_WindowButtonUpFcn(hObject, eventdata, handles)
 % hObject    handle to Fig_seg (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-global Mflag Aflag Fflag value Dflag Sflag;
+global Mflag Aflag Fflag value Sflag;
 
 if Mflag
     Mflag = 0;
