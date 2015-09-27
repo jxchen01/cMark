@@ -59,9 +59,9 @@ Mflag=0;
 handles.output = hObject;
 
 % set the slider's parameters
-set(handles.slider, 'Max', 10);
-SliderStepX = 1/(10-0);
-set(handles.slider, 'SliderStep', [SliderStepX 1]);
+set(handles.slider, 'Max', 7,'Min',0);
+set(handles.slider, 'SliderStep', [1/8 1]);
+handles.Brush=1;
 
 % size of window
 set(handles.uipanel2,'unit','normalized','position',[0.01,0.01,0.99,0.99]);
@@ -969,7 +969,7 @@ guidata(hObject, handles);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%% Set the Segmentation flag %%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%  Segmentation Correction  %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % --- Executes on mouse press over figure background, over a disabled or
 % --- inactive control, or over an axes background.
@@ -1089,14 +1089,37 @@ if (Segflag && Mflag)
         % notice that x-y is reversed in plot 
         ind = sub2ind([handles.xdim,handles.ydim],yp,xp);
         
-        LineWidth = round(get(handles.slider, 'Value'))+1;
-        LineWidthPlot = LineWidth + 2;
+        LineWidthPlot = handles.Brush;
+        if(handles.Brush>1)
+            origInfo = getappdata(gca, 'matlab_graphics_resetplotview');
+            %disp([get(gca,'XLim'),origInfo.XLim,get(gca,'YLim'),origInfo.YLim])
+            if isempty(origInfo)
+                isZoomed = false;
+            elseif (isequal(get(gca,'XLim'), origInfo.XLim) && isequal(get(gca,'YLim'), origInfo.YLim) )      
+                isZoomed = false;
+            else
+                isZoomed = true;
+            end
+            
+            if(isZoomed)
+                new_xx = get(gca,'XLim');
+                %new_yy = get(gca,'YLim');
+                %disp([(new_xx(2)-new_xx(1))/origInfo.XLim(2),(new_yy(2)-new_yy(1))/origInfo.YLim(2)])
+                
+                rr = origInfo.XLim(2)/(new_xx(2)-new_xx(1)) ;
+                r0 = (handles.Brush-1)/2;
+                
+                r1 = min([handles.xdim / origInfo.YLim(2),handles.ydim / origInfo.XLim(2)]);
+                LineWidthPlot= r0*rr*2 * r1 +1 ;
+            end
+        end
         
-        NImg=zeros(handles.xdim,handles.ydim);
-        NImg(ind)=1;
-        se = strel('disk',LineWidth,0);
-        NImg=imdilate(NImg,se);
-        handles.NImg = handles.NImg | NImg;
+        handles.NImg(ind)=1;
+%         NImg=zeros(handles.xdim,handles.ydim);
+%         NImg(ind)=1;
+%         se = strel('disk',LineWidth,0);
+%         NImg=imdilate(NImg,se);
+%         handles.NImg = handles.NImg | NImg;
         guidata(hObject, handles);
         
         if Aflag
@@ -1129,16 +1152,36 @@ if (Segflag && Mflag)
     % retrieve the lastest handles
     handles = guidata(hObject);
     
+    NImg = handles.NImg;
+    if(handles.Brush>1) 
+        se = strel('disk',(handles.Brush-1)/2,0);
+        NImg=imdilate(NImg,se);
+    end
+    
     if Aflag            
-        max_id = 1 + numel(handles.cList);
-        handles.Img(handles.NImg>0)=max_id; % update matrix 
-        handles.cList{1,max_id}=struct('seg',handles.NImg,'size',nnz(handles.NImg)); % update cell
+        ind = find(NImg>0);
+        tmp = handles.Img(ind);
+        
+        if(any(tmp(:)))
+            waitfor(msgbox('New cell cannot overlap with existing cells'));
+        else
+            max_id = 1 + numel(handles.cList);
+            handles.Img(ind)=max_id; % update matrix 
+            handles.cList{1,max_id}=struct('seg',NImg,'size',numel(ind)); % update cell
+        end
     elseif Fflag
         %Need User first choose the intend-to-fix cell, that's to say,
         %first buttondown on the specific cell
         if(value>0)
-            handles.Img(handles.NImg>0)=value;
-            handles.cList{1,value}=struct('seg',handles.NImg,'size',nnz(handles.NImg));
+            ind = find(NImg>0);
+            tmp = handles.Img(ind);
+            if(any(tmp(:)>0 & tmp(:)~=value))
+                waitfor(msgbox('Extended region cannot overlap with other existing cells'));
+            else
+                handles.Img(ind)=value;
+                tmp = ismember(handles.Img,value);
+                handles.cList{1,value}=struct('seg',tmp,'size',nnz(tmp));
+            end
         end
         
     elseif Sflag
@@ -1384,8 +1427,12 @@ function slider_Callback(hObject, eventdata, handles)
 % hObject    handle to slider (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-val = round(get(hObject,'Value')) + 1;
-set(handles.BrushSize,'String',num2str(val));
+handles=guidata(hObject);
+x=round(get(hObject,'Value'));
+handles.Brush = 2*x+1;
+set(handles.BrushSize,'String',num2str(handles.Brush));
+guidata(hObject, handles);
+
 % Hints: get(hObject,'Value') returns position of slider
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
 
