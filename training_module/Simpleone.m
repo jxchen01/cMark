@@ -298,6 +298,7 @@ f_idx = str2double(get(hObject,'String'));
 
 if (f_idx < 1 || f_idx > handles.Maxindex || round(f_idx)~=f_idx)
     msgbox('Invalid Frame Index Number')
+    set(hObject,'String',num2str(handles.counter));
 else
     handles.counter = f_idx;
     handles.Img=handles.raw{handles.counter};
@@ -533,7 +534,7 @@ if flag
                 ind3=find(pixel_idx2(:,1)==xx(i));
                 if(~isempty(ind3))
                     pixel_idx(ind1(ind2(ind3)),:)=[];
-                    handle.label_idx{c_idx} = pixel_idx;
+                    handles.label_idx{c_idx} = pixel_idx;
                     clear pixel_idx pixel_idx1 pixel_idx2 ind1 ind2 ind3
                 else
                     error('did not find');

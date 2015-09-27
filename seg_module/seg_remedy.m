@@ -56,9 +56,9 @@ global Aflag Fflag Dflag Sflag
 % Choose default command line output for seg_remedy
 handles.output = hObject;
 
-set(handles.slider, 'Max', 10);
-SliderStepX = 1/(10-0);
-set(handles.slider, 'SliderStep', [SliderStepX 1]);
+set(handles.slider, 'Max', 7,'Min',0);
+set(handles.slider, 'SliderStep', [1/8 1]);
+handles.Brush=1;
 
 set(handles.Operation,'SelectedObject',handles.Add)
 Aflag=1;
@@ -169,6 +169,12 @@ function Goback_Callback(hObject, eventdata, handles)
 global Saveflag;
 handles = guidata(hObject);
 
+if(~isfield(handles,'Maxindex'))
+    set(hObject,'String',[]);
+    msgbox('lPlease load data first');
+    return
+end
+
 if Saveflag==0
     choice = questdlg('Directly going back without "Save" will lose all modifications in the current frame. Continue?',...
 	'Warning', ...
@@ -176,7 +182,7 @@ if Saveflag==0
 % Handle response
    switch choice
     case 'Yes'
-        handles.counter = handles.counter - 1;
+        nc = handles.counter - 1;
     case 'No'
         return;
    end
@@ -224,6 +230,12 @@ function Gonext_Callback(hObject, eventdata, handles)
 global Saveflag;
 handles = guidata(hObject); 
 
+if(~isfield(handles,'Maxindex'))
+    set(hObject,'String',[]);
+    msgbox('lPlease load data first');
+    return
+end
+
 if Saveflag==0
     choice = questdlg('Directly going next without "Save" will lose all modifications in the current frame. Continue?',...
 	'Warning', ...
@@ -231,12 +243,11 @@ if Saveflag==0
 % Handle response
    switch choice
     case 'Yes'
-        handles.counter = handles.counter + 1;
+        nc = handles.counter + 1;
     case 'No'
         return;
    end
    Saveflag = 1;
-
 else
     nc = handles.counter + 1;
 end
@@ -276,8 +287,31 @@ end
 
 % Hints: get(hObject,'String') returns contents of frame_idx as text
 %        str2double(get(hObject,'String')) returns contents of frame_idx as a double
+global Saveflag;
 handles = guidata(hObject);
-nc = str2double(get(hObject,'String'));
+
+if(~isfield(handles,'Maxindex'))
+    set(hObject,'String',[]);
+    msgbox('lPlease load data first');
+    return
+end
+
+if Saveflag==0
+    choice = questdlg('Directly going the specific frame without "Save" will lose all modifications in the current frame. Continue?',...
+	'Warning', ...
+	'Yes','No','No');
+% Handle response
+   switch choice
+    case 'Yes'
+        nc = str2double(get(hObject,'String'));
+    case 'No'
+        return;
+   end
+   Saveflag = 1;
+else
+    nc = str2double(get(hObject,'String'));
+end
+
 if(nc>1 && nc<handles.Maxindex)
     handles.counter=nc;
     handles.Img=handles.matEachFrame{1,nc};
@@ -303,6 +337,9 @@ if(nc>1 && nc<handles.Maxindex)
     
     axes(handles.Fig_raw);
     imshow(handles.raw);
+else
+    msgbox('Invalid Frame Index Number');
+    set(hObject,'String',num2str(handles.counter))
 end
 
 
@@ -417,10 +454,6 @@ function figure2_WindowButtonMotionFcn(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 global Mflag x0 y0 x y Aflag Fflag Sflag Saveflag; 
 
-if isMultipleCall();  
-    return;  
-end
-
 if Mflag
     %%%% set the current point as (x0,y0), preparing for following
     %%%% button motion drawing
@@ -437,15 +470,38 @@ if Mflag
     if((~any(xp<1)) && (~any(xp>handles.ydim)) && (~any(yp<1)) &&(~any(yp>handles.xdim)))    
         % notice that x-y is reversed in plot 
         ind = sub2ind([handles.xdim,handles.ydim],yp,xp);
+
+        LineWidthPlot = handles.Brush;
+        if(handles.Brush>1)
+            origInfo = getappdata(gca, 'matlab_graphics_resetplotview');
+            %disp([get(gca,'XLim'),origInfo.XLim,get(gca,'YLim'),origInfo.YLim])
+            if isempty(origInfo)
+                isZoomed = false;
+            elseif (isequal(get(gca,'XLim'), origInfo.XLim) && isequal(get(gca,'YLim'), origInfo.YLim) )      
+                isZoomed = false;
+            else
+                isZoomed = true;
+            end
+            
+            if(isZoomed)
+                new_xx = get(gca,'XLim');
+                %new_yy = get(gca,'YLim');
+                %disp([(new_xx(2)-new_xx(1))/origInfo.XLim(2),(new_yy(2)-new_yy(1))/origInfo.YLim(2)])
+                
+                rr = origInfo.XLim(2)/(new_xx(2)-new_xx(1)) ;
+                r0 = (handles.Brush-1)/2;
+                
+                r1 = min([handles.xdim / origInfo.YLim(2),handles.ydim / origInfo.XLim(2)]);
+                LineWidthPlot= r0*rr*2 * r1 +1 ;
+            end
+        end
         
-        LineWidth = round(get(handles.slider, 'Value'))+1;
-        LineWidthPlot = LineWidth + 2;
-        
-        NImg=zeros(handles.xdim,handles.ydim);
-        NImg(ind)=1;
-        se = strel('disk',LineWidth,0);
-        NImg=imdilate(NImg,se);
-        handles.NImg = handles.NImg | NImg;
+        handles.NImg(ind)=1;
+        % NImg=zeros(handles.xdim,handles.ydim);
+        % NImg(ind)=1;
+        % se = strel('disk',LineWidth,0);
+        % NImg=imdilate(NImg,se);
+        % handles.NImg = handles.NImg | NImg;
         guidata(hObject, handles);
         
         if Aflag
@@ -473,27 +529,46 @@ function figure2_WindowButtonUpFcn(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 global Mflag Aflag Fflag value Sflag;
 
-if Mflag
+if Mflag %%%% only when A F S
     Mflag = 0;
     % retrieve the lastest handles
     handles = guidata(hObject);
     
-    if Aflag            
-        max_id = 1 + numel(handles.cList);
-        handles.Img(handles.NImg>0)=max_id; % update matrix 
-        handles.cList{1,max_id}=struct('seg',handles.NImg,'size',nnz(handles.NImg)); % update cell
+    NImg = handles.NImg;
+    if(handles.Brush>1) 
+        se = strel('disk',(handles.Brush-1)/2,0);
+        NImg=imdilate(NImg,se);
+    end
+    
+    if Aflag  
+        ind = find(NImg>0);
+        tmp = handles.Img(ind);
+        
+        if(any(tmp(:)))
+            waitfor(msgbox('New cell cannot overlap with existing cells'));
+        else
+            max_id = 1 + numel(handles.cList);
+            handles.Img(ind)=max_id; % update matrix 
+            handles.cList{1,max_id}=struct('seg',NImg,'size',numel(ind)); % update cell
+        end
     elseif Fflag
         %Need User first choose the intend-to-fix cell, that's to say,
         %first buttondown on the specific cell
         if(value>0)
-            handles.Img(handles.NImg>0)=value;
-            handles.cList{1,value}=struct('seg',handles.NImg,'size',nnz(handles.NImg));
+            ind = find(NImg>0);
+            tmp = handles.Img(ind);
+            if(any(tmp(:)>0 & tmp(:)~=value))
+                waitfor(msgbox('Extended region cannot overlap with other existing cells'));
+            else
+                handles.Img(ind)=value;
+                tmp = ismember(handles.Img,value);
+                handles.cList{1,value}=struct('seg',tmp,'size',nnz(tmp));
+            end
         end
         
     elseif Sflag
         cImg=handles.Img;
         cList=handles.cList;
-        NImg=handles.NImg;
         idx_modified = unique(nonzeros(cImg(NImg>0)));
         cImg(NImg>0)=0;
         
@@ -568,29 +643,14 @@ function slider_Callback(hObject, eventdata, handles)
 % hObject    handle to slider (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-x=round(get(hObject,'Value')) + 1;
-set(handles.slider_value,'String',num2str(x));
+handles=guidata(hObject);
+x=round(get(hObject,'Value'));
+handles.Brush = 2*x+1;
+set(handles.slider_value,'String',num2str(handles.Brush));
+guidata(hObject, handles);
+
 % Hints: get(hObject,'Value') returns position of slider
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
-
-
-% --- Executes during object creation, after setting all properties.
-function slider_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to slider (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: slider controls usually have a light gray background.
-if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor',[.9 .9 .9]);
-end
-
-
-% --- Executes on mouse press over axes background.
-function Fig_seg_ButtonDownFcn(hObject, eventdata, handles)
-% hObject    handle to Fig_seg (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 
 % --- Executes on button press in SaveImage.
@@ -599,9 +659,15 @@ function SaveImage_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 global Saveflag;
-Saveflag = 1;
 handles = guidata(hObject);
 
+if(~isfield(handles,'Maxindex'))
+    set(hObject,'String',[]);
+    msgbox('lPlease load data first');
+    return
+end
+
+Saveflag = 1;
 handles.matEachFrame{1,handles.counter}=handles.Img;
 handles.cellEachFrame{1,handles.counter}=handles.cList;
 
@@ -614,6 +680,15 @@ function SaveAll_Callback(hObject, eventdata, handles)
 % hObject    handle to SaveAll (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+handles = guidata(hObject);
+if(~isfield(handles,'Maxindex'))
+    set(hObject,'String',[]);
+    msgbox('lPlease load data first');
+    return
+end
+
+
 choice = questdlg('Save the current segmentation results?', 'Save', ...
 	'Yes,please go on.','No, I will make more changes.','No, I will make more changes.');
 % Handle response
