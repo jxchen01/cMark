@@ -99,7 +99,7 @@ handles=guidata(hObject);
 if(isfield(handles,'numLabel') && handles.numLabel>0)
     old_num = handles.numLabel;
     num=str2double(get(hObject,'String'));
-    if(num<1 || num>7)
+    if(num<1 || num>7 || round(num)~=num)
         msgbox('Please enter a valid number: [0,1,2,3,4,5,6,7]');
         set(hObject,'String',num2str(old_num));
         return
@@ -122,6 +122,11 @@ if(isfield(handles,'numLabel') && handles.numLabel>0)
     end
 else
     num=str2double(get(hObject,'String')); %%%% total number of labels
+    if(num<1 || num>7 || round(num)~=num)
+        msgbox('Please enter a valid number: [0,1,2,3,4,5,6,7]');
+        set(hObject,'String',[]);
+        return
+    end
     handles.label_idx = cell(1,num);
     for i=1:1:num
         handles.label_idx{i} = [];
@@ -140,12 +145,12 @@ handles=guidata(hObject);
 
 if(~isfield(handles,'numLabel') || handles.numLabel<1)
     msgbox('set a valid number of labels first');
-    set(handles.CurrentLable,'String',[]);
+    set(hObject,'String',[]);
     return
 end
 
 tmp=str2double(get(hObject,'String'));
-if (tmp<=handles.numLabel && tmp>0)
+if (tmp<=handles.numLabel && tmp>0 && round(tmp)==tmp)
     CLable=tmp;
     switch CLable
         case 1
@@ -167,9 +172,6 @@ if (tmp<=handles.numLabel && tmp>0)
 else
     msgbox('Please enter a valid label');
 end
-
-% Hints: get(hObject,'String') returns contents of CurrentLable as text
-%        str2double(get(hObject,'String')) returns contents of CurrentLable as a double
 
 
 % --- Executes on button press in LoadData.
@@ -287,14 +289,14 @@ function GoToFrame_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 handles=guidata(hObject);
 if(~isfield(handles,'Maxindex'))
-    set(handles.GoToFrame,'String',[]);
-    msgbox('load data first');
+    set(hObject,'String',[]);
+    msgbox('lPlease load data first');
     return
 end
 
 f_idx = str2double(get(hObject,'String'));
 
-if f_idx < 1 && f_idx > handles.Maxindex
+if (f_idx < 1 || f_idx > handles.Maxindex || round(f_idx)~=f_idx)
     msgbox('Invalid Frame Index Number')
 else
     handles.counter = f_idx;
@@ -308,10 +310,8 @@ else
     set(gcf,'WindowButtonMotionFcn',{@figure1_WindowButtonMotionFcn,handles});
     set(gcf,'WindowButtonUpFcn',{@figure1_WindowButtonUpFcn,handles});
 end
-% Hints: get(hObject,'String') returns contents of GoToFrame as text
-%        str2double(get(hObject,'String')) returns contents of GoToFrame as a double
 
- 
+
 % --- Executes on button press in Mark.
 function Mark_Callback(hObject, eventdata, handles)
 % hObject    handle to Mark (see GCBO)
@@ -320,8 +320,8 @@ function Mark_Callback(hObject, eventdata, handles)
 global Aflag Dflag;
 
 handles=guidata(hObject);
-if(~isfield(handles,'numLabel') || handles.numLabel<=0)
-    msgbox('set a valid number of labels first');
+if(~isfield(handles,'numLabel') || handles.numLabel<1)
+    msgbox('Please set a valid number of labels first');
     set(handles.Mark,'Value',0);
     return
 end
@@ -389,8 +389,6 @@ flag = 0;
 handles.cmap=[1,0,0;0,1,0;0,0,1;1,1,0;1,0,1;0,1,1;1,1,1];
 guidata(hObject, handles);
 
-% Hint: place code in OpeningFcn to populate fig
-
 
 % --- Executes on mouse press over figure background, over a disabled or
 % --- inactive control, or over an axes background.
@@ -422,17 +420,12 @@ if(~lock_up)
 end
 
 
-
 % --- Executes on mouse motion over figure - except title and menu.
 function figure1_WindowButtonMotionFcn(hObject, eventdata, handles)
 % hObject    handle to Fig_seg (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 global Aflag flag Dflag CLable x0 y0 x y; 
-
-if isMultipleCall();  
-    return;  
-end
 
 if flag
     %%%% set the current point as (x0,y0), preparing for following
@@ -469,7 +462,6 @@ if flag
         end
     end
 end
-
 
 
 % --- Executes on mouse press over figure background, over a disabled or
@@ -565,7 +557,6 @@ if flag
 end
 
 
-
 % --- Executes on slider movement.
 function slider_Callback(hObject, eventdata, handles)
 % hObject    handle to slider (see GCBO)
@@ -576,22 +567,8 @@ x=round(get(hObject,'Value'));
 handles.Brush = 2*x+1;
 set(handles.edit3,'String',num2str(handles.Brush));
 guidata(hObject, handles);
-
-
 % Hints: get(hObject,'Value') returns position of slider
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
-
-
-% --- Executes during object creation, after setting all properties.
-function slider_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to slider (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: slider controls usually have a light gray background.
-if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor',[.9 .9 .9]);
-end
 
 
 % --- Executes on button press in Save.
@@ -605,12 +582,25 @@ if(~isfield(handles,'Maxindex') || ~isfield(handles,'label_idx'))
     return
 end
 
+emptyFlag=1;
+for i=1:1:handles.numLabel
+    if(~isempty(handles.label_idx{i}))
+        emptyFlag=0;
+        break;
+    end
+end
+
+if(emptyFlag)
+    msgbox('No annotation has been made. No need to save');
+    return
+end
+
 choice = questdlg('Are you sure to save the present LablePixelList? ', ...
 	'Save', ...
-	'Yes,please go on.','No, I will make more changes.','No, I will make more changes.');
+	'Yes','No, I will make more changes.','No, I will make more changes.');
 
 switch choice
-    case 'Yes,please go on.'
+    case 'Yes'
         [FileName,PathName] = uiputfile('*.mat','Select output location');
         label_index=handles.label_idx;
         save([PathName,FileName],'label_index');
