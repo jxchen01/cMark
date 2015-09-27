@@ -85,30 +85,50 @@ function varargout = Simpleone_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
 
 
-
 function SetLable_Callback(hObject, eventdata, handles)
 % hObject    handle to SetLable (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
 handles=guidata(hObject);
-if(isfield(handles,'numLabel'))
-    msgbox('Number of Labels cannot be changed');
-    return
-end
 
 %%%% after setting the number of labels, two variables will be created 
 %%%% numLabel: the number of labels
 %%%% label_idx: the list the pixels of each label
-num=str2double(get(hObject,'String')); %%%% total number of labels
-handles.label_idx = cell(1,num);
-for i=1:1:num
-    handles.label_idx{i} = [];
-end
-handles.numLabel = num;
-guidata(hObject,handles);
 
-% Hints: get(hObject,'String') returns contents of SetLable as text
-%        str2double(get(hObject,'String')) returns contents of SetLable as a double
+if(isfield(handles,'numLabel') && handles.numLabel>0)
+    old_num = handles.numLabel;
+    num=str2double(get(hObject,'String'));
+    if(num<1 || num>7)
+        msgbox('Please enter a valid number: [0,1,2,3,4,5,6,7]');
+        set(hObject,'String',num2str(old_num));
+        return
+    end
+    
+    tmp=handles.label_idx;
+    if(old_num>num)
+        handles.label_idx = cell(1,num);
+        handles.label_idx(1:num) = tmp(1:num);
+        handles.numLabel = num;
+    elseif(old_num==num)
+        return
+    else
+        handles.label_idx = cell(1,num);
+        handles.label_idx(1:old_num) = tmp(1:old_num);
+        for i=old_num+1:1:num
+            handles.label_idx{i}=[];
+        end
+        handles.numLabel = num;
+    end
+else
+    num=str2double(get(hObject,'String')); %%%% total number of labels
+    handles.label_idx = cell(1,num);
+    for i=1:1:num
+        handles.label_idx{i} = [];
+    end
+    handles.numLabel = num;
+end
+guidata(hObject,handles);
 
 
 function CurrentLable_Callback(hObject, eventdata, handles)
