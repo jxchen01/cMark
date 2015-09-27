@@ -59,9 +59,10 @@ lock_up=0;
 % Choose default command line output for Simpleone
 handles.output = hObject;
 
-set(handles.slider, 'Max', 10);
-SliderStepX = 1/(10-0);
-set(handles.slider, 'SliderStep', [SliderStepX 1]);
+set(handles.slider, 'Max', 7,'Min',0);
+set(handles.slider, 'SliderStep', [1/8 1]);
+handles.Brush=1;
+
 % Update handles structure
 guidata(hObject, handles);
 
@@ -203,7 +204,6 @@ else
 end
     
 
-
 % --- Executes on button press in goback.
 function goback_Callback(hObject, eventdata, handles)
 % hObject    handle to goback (see GCBO)
@@ -259,7 +259,6 @@ else
     set(gcf,'WindowButtonUpFcn',{@figure1_WindowButtonUpFcn,handles});
     set(handles.GoToFrame,'String',num2str(handles.counter));
 end
-
 
 
 function GoToFrame_Callback(hObject, eventdata, handles)
@@ -332,6 +331,7 @@ function Delete_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 global Aflag Dflag;
 
+handles=guidata(hObject);
 if(~isfield(handles,'numLabel') || handles.numLabel<=0)
     msgbox('set a valid number of labels first');
     set(handles.Delete,'Value',0);
@@ -431,7 +431,7 @@ if flag
         % notice that x-y is reversed in plot 
         ind = sub2ind([handles.xdim,handles.ydim],yp,xp);
         
-        LineWidthPlot = round(get(handles.slider, 'Value'))+2;
+        LineWidthPlot=handles.Brush;
 
         NImg = handles.NImg;
         NImg(ind)=1;
@@ -466,9 +466,10 @@ if flag
     % retrieve the lastest handles
     handles = guidata(hObject);
     NImg = handles.NImg;
-    LineWidth = round(get(handles.slider, 'Value'))+1; 
-    se = strel('disk',LineWidth,0);
-    NImg=imdilate(NImg,se);
+    if(handles.Brush>1) 
+        se = strel('disk',(handles.Brush-1)/2,0);
+        NImg=imdilate(NImg,se);
+    end
     
     ind = find(NImg>0);
     
@@ -512,7 +513,7 @@ if flag
                 g(ind(i))=value;
                 b(ind(i))=value;
                 %%%% update pixel list
-                pixel_idx = handle.label_idx{c_idx};
+                pixel_idx = handles.label_idx{c_idx};
                 ind1=find(pixel_idx(:,3)==handles.counter);
                 pixel_idx1=pixel_idx(ind1,:);
                 ind2=find(pixel_idx1(:,2)==yy(i));
@@ -550,8 +551,13 @@ function slider_Callback(hObject, eventdata, handles)
 % hObject    handle to slider (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-x=round(get(hObject,'Value')) + 1;
-set(handles.edit3,'String',[num2str(x)]);
+handles=guidata(hObject);
+x=round(get(hObject,'Value'));
+handles.Brush = 2*x+1;
+set(handles.edit3,'String',num2str(handles.Brush));
+guidata(hObject, handles);
+
+
 % Hints: get(hObject,'Value') returns position of slider
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
 
@@ -586,8 +592,8 @@ choice = questdlg('Are you sure to save the present LablePixelList? ', ...
 switch choice
     case 'Yes,please go on.'
         [FileName,PathName] = uiputfile('*.mat','Select output location');
-        lable_index=handles.label_idx;
-        save([PathName,FileName],'lable_index');
+        label_index=handles.label_idx;
+        save([PathName,FileName],'label_index');
         guidata(hObject, handles);
         msgbox('save successfully','Infor');
     case 'No, I will make more changes.'
