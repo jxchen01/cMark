@@ -22,7 +22,7 @@ function varargout = Simpleone(varargin)
 
 % Edit the above text to modify the response to help Simpleone
 
-% Last Modified by GUIDE v2.5 20-Aug-2015 14:57:11
+% Last Modified by GUIDE v2.5 09-Sep-2015 10:41:23
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -52,14 +52,23 @@ function Simpleone_OpeningFcn(hObject, eventdata, handles, varargin)
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to Simpleone (see VARARGIN)
 
+global Aflag Dflag flag lock_up;
+
+lock_up=0;
+
 % Choose default command line output for Simpleone
 handles.output = hObject;
 
-set(handles.slider, 'Max', 10);
-SliderStepX = 1/(10-0);
-set(handles.slider, 'SliderStep', [SliderStepX 1]);
+set(handles.slider, 'Max', 7,'Min',0);
+set(handles.slider, 'SliderStep', [1/8 1]);
+handles.Brush=1;
+
 % Update handles structure
 guidata(hObject, handles);
+
+Aflag=0;
+flag=0;
+Dflag=0;
 
 % UIWAIT makes Simpleone wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
@@ -76,36 +85,55 @@ function varargout = Simpleone_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
 
 
-
 function SetLable_Callback(hObject, eventdata, handles)
 % hObject    handle to SetLable (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
 handles=guidata(hObject);
-SetLable=str2double(get(hObject,'String'));
-handles.lable_inx = cell(1,SetLable);
-for i=1:1:SetLable
-    handles.lable_inx{i}.PixelList = [];
+
+%%%% after setting the number of labels, two variables will be created 
+%%%% numLabel: the number of labels
+%%%% label_idx: the list the pixels of each label
+
+if(isfield(handles,'numLabel') && handles.numLabel>0)
+    old_num = handles.numLabel;
+    num=str2double(get(hObject,'String'));
+    if(num<1 || num>7 || round(num)~=num)
+        msgbox('Please enter a valid number: [0,1,2,3,4,5,6,7]');
+        set(hObject,'String',num2str(old_num));
+        return
+    end
+    
+    tmp=handles.label_idx;
+    if(old_num>num)
+        handles.label_idx = cell(1,num);
+        handles.label_idx(1:num) = tmp(1:num);
+        handles.numLabel = num;
+    elseif(old_num==num)
+        return
+    else
+        handles.label_idx = cell(1,num);
+        handles.label_idx(1:old_num) = tmp(1:old_num);
+        for i=old_num+1:1:num
+            handles.label_idx{i}=[];
+        end
+        handles.numLabel = num;
+    end
+else
+    num=str2double(get(hObject,'String')); %%%% total number of labels
+    if(num<1 || num>7 || round(num)~=num)
+        msgbox('Please enter a valid number: [0,1,2,3,4,5,6,7]');
+        set(hObject,'String',[]);
+        return
+    end
+    handles.label_idx = cell(1,num);
+    for i=1:1:num
+        handles.label_idx{i} = [];
+    end
+    handles.numLabel = num;
 end
-% handles.matFrame{handles.counter} =struct('PixelList',[]);
-handles.SetLable = SetLable;
 guidata(hObject,handles);
-
-% Hints: get(hObject,'String') returns contents of SetLable as text
-%        str2double(get(hObject,'String')) returns contents of SetLable as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function SetLable_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to SetLable (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
 
 
 function CurrentLable_Callback(hObject, eventdata, handles)
@@ -114,60 +142,35 @@ function CurrentLable_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 global CLable;
 handles=guidata(hObject);
-CLable=str2double(get(hObject,'String'));
-switch CLable
-    case 1
-        set(handles.edit4,'String','Red');
-    case 2
-        set(handles.edit4,'String','Green');
-    case 3
-        set(handles.edit4,'String','Blue');
-    case 4
-        set(handles.edit4,'String','Yellow');
-    case 5
-        set(handles.edit4,'String','Magenta');
-    case 6
-        set(handles.edit4,'String','Cyan');
-    case 7
-        set(handles.edit4,'String','White');
-end
-guidata(hObject,handles);
 
-% Hints: get(hObject,'String') returns contents of CurrentLable as text
-%        str2double(get(hObject,'String')) returns contents of CurrentLable as a double
-
-
-function edit4_Callback(hObject, eventdata, handles)
-% hObject    handle to edit4 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit4 as text
-%        str2double(get(hObject,'String')) returns contents of edit4 as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function edit4_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit4 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
+if(~isfield(handles,'numLabel') || handles.numLabel<1)
+    msgbox('set a valid number of labels first');
+    set(hObject,'String',[]);
+    return
 end
 
-% --- Executes during object creation, after setting all properties.
-function CurrentLable_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to CurrentLable (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
+tmp=str2double(get(hObject,'String'));
+if (tmp<=handles.numLabel && tmp>0 && round(tmp)==tmp)
+    CLable=tmp;
+    switch CLable
+        case 1
+            set(handles.color,'String','Red');
+        case 2
+            set(handles.color,'String','Green');
+        case 3
+            set(handles.color,'String','Blue');
+        case 4
+            set(handles.color,'String','Yellow');
+        case 5
+            set(handles.color,'String','Magenta');
+        case 6
+            set(handles.color,'String','Cyan');
+        case 7
+            set(handles.color,'String','White');
+    end
+    guidata(hObject,handles);
+else
+    msgbox('Please enter a valid label');
 end
 
 
@@ -181,35 +184,47 @@ function LoadData_Callback(hObject, eventdata, handles)
 if isequal(FileName,0)
    msgbox('User selected Cancel');
 else
-    load(FileName);
+    load([PathName,FileName],'rawEachFrame');
     handles = guidata(hObject);
-    handles.rawEachFrame = rawEachFrame;
     handles.raw = rawEachFrame;
-    handles.FileName = FileName;
+    
+    %%%%% general information %%%%%%
     handles.Maxindex = numel(rawEachFrame);
     [dimx,dimy]=size(rawEachFrame{1,1});
     handles.xdim = dimx;
     handles.ydim = dimy;
     
-    handles.matFrame = cell(1,handles.Maxindex);
-%     handles.matFrame{1} =struct('figure',zeros(handles.xdim,handles.ydim),'PixelList',cell(1,handles.SetLable));
-    
+    %%%%% things will be changed each time going to a different frame %%%%
     handles.counter = 1;
     handles.Img = rawEachFrame{1,1};
-    handles.R=handles.Img;
-    handles.G=handles.Img;
-    handles.B=handles.Img;
+    
+    %%%% key variables %%%%%%
+    handles.matFrame = cell(1,handles.Maxindex); %%%% each entry holds the indexed pixels in that frame
+    for i=1:1:handles.Maxindex
+        handles.matFrame{i}=zeros(dimx,dimy);
+    end
+    
+    handles.rgb = cell(1,numel(rawEachFrame)); %%%% used to hold images with labels
+    for i=1:1:numel(rawEachFrame)
+        a=rawEachFrame{i};
+        handles.rgb{i}=cat(3,a,a,a); %%% initially, no labels, only grayscale images
+    end
+    
+    %%%% update text boxes %%%%%
+    set(handles.GoToFrame,'String',num2str(handles.counter));
+    set(handles.total_index,'String',['/',num2str(handles.Maxindex)]);
+    
     guidata(hObject, handles);
     
-    axes(handles.axes1);
+    %%%%%%%%% visualization %%%%%%%%
+    axes(handles.fig);
     imshow(rawEachFrame{1,1});
     
     set(gcf,'WindowButtonDownFcn',{@figure1_WindowButtonDownFcn,handles});
+    set(gcf,'WindowButtonMotionFcn',{@figure1_WindowButtonMotionFcn,handles});
     set(gcf,'WindowButtonUpFcn',{@figure1_WindowButtonUpFcn,handles});
-    set(handles.GoToFrame,'String',num2str(handles.counter));
 end
     
-
 
 % --- Executes on button press in goback.
 function goback_Callback(hObject, eventdata, handles)
@@ -219,38 +234,22 @@ function goback_Callback(hObject, eventdata, handles)
 
 handles = guidata(hObject);
 
-% if Saveflag==0
-%     choice = questdlg('Directly going back without Save will lose all the current work! Do you want to continue?',...
-% 	'Warning', ...
-% 	'Yes','No','No');
-% % Handle response
-%    switch choice
-%     case 'Yes'
-        handles.counter = handles.counter - 1;
-%     case 'No'
-%         return;
-%    end
-%    Saveflag = 1;
-% 
-% else
-%     handles.counter = handles.counter - 1;
-% end
+if(~isfield(handles,'Maxindex'))
+    return
+end
 
-if handles.counter < 1
-    handles.counter = handles.counter + 1;
-    msgbox('Wrong index')
+if handles.counter == 1
+    msgbox('Already in the first frame!')
 else
-    handles.Img=handles.rawEachFrame{1,handles.counter};
-    handles.R=handles.Img;
-    handles.G=handles.Img;
-    handles.B=handles.Img;
-%     handles.matFrame{handles.counter} =struct('PixelList',[]);
+    handles.counter = handles.counter - 1;
+    handles.Img=handles.raw{1,handles.counter}; %%%% the orginal grayscale image
     guidata(hObject, handles);
     
-    axes(handles.axes1);
-    imshow(handles.rawEachFrame{handles.counter}); 
+    axes(handles.fig);
+    imshow(handles.rgb{handles.counter}); 
     
     set(gcf,'WindowButtonDownFcn',{@figure1_WindowButtonDownFcn,handles});
+    set(gcf,'WindowButtonMotionFcn',{@figure1_WindowButtonMotionFcn,handles});
     set(gcf,'WindowButtonUpFcn',{@figure1_WindowButtonUpFcn,handles});
     set(handles.GoToFrame,'String',num2str(handles.counter));
 end
@@ -262,76 +261,78 @@ function gonext_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-handles = guidata(hObject); 
-handles.counter = handles.counter + 1;
- if handles.counter > handles.Maxindex
-     handles.counter = handles.counter - 1;
-     msgbox('Wrong index') 
- else
-     handles.Img=handles.rawEachFrame{handles.counter};
-     handles.R=handles.Img;
-     handles.G=handles.Img;
-     handles.B=handles.Img;
-%      handles.matFrame{handles.counter} =struct('PixelList',[]);
-     guidata(hObject, handles);
-     
-     axes(handles.axes1);
-     imshow(handles.rawEachFrame{handles.counter});
-     
-     set(gcf,'WindowButtonDownFcn',{@figure1_WindowButtonDownFcn,handles});
-     set(gcf,'WindowButtonUpFcn',{@figure1_WindowButtonUpFcn,handles});
-     set(handles.GoToFrame,'String',num2str(handles.counter));
- end
+handles = guidata(hObject);
+if(~isfield(handles,'Maxindex'))
+    return
+end
 
+if handles.counter == handles.Maxindex
+    msgbox('Already in the last frame')
+else
+    handles.counter = handles.counter + 1;
+    handles.Img=handles.raw{handles.counter};
+    guidata(hObject, handles);
+    
+    axes(handles.fig);
+    imshow(handles.rgb{handles.counter});
+    
+    set(gcf,'WindowButtonDownFcn',{@figure1_WindowButtonDownFcn,handles});
+    set(gcf,'WindowButtonMotionFcn',{@figure1_WindowButtonMotionFcn,handles});
+    set(gcf,'WindowButtonUpFcn',{@figure1_WindowButtonUpFcn,handles});
+    set(handles.GoToFrame,'String',num2str(handles.counter));
+end
 
 
 function GoToFrame_Callback(hObject, eventdata, handles)
 % hObject    handle to GoToFrame (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-handles=guidata(hObject,handles);
-handles.counter = str2double(get(hObject,'String'));
+handles=guidata(hObject);
+if(~isfield(handles,'Maxindex'))
+    set(hObject,'String',[]);
+    msgbox('lPlease load data first');
+    return
+end
 
-if handles.counter < 1 && handles.counter > handles.Maxindex
-    handles.counter = handles.counter + 1;
-    msgbox('Wrong index')
+f_idx = str2double(get(hObject,'String'));
+
+if (f_idx < 1 || f_idx > handles.Maxindex || round(f_idx)~=f_idx)
+    msgbox('Invalid Frame Index Number')
+    set(hObject,'String',num2str(handles.counter));
 else
-    handles.Img=handles.rawEachFrame{handles.counter};
-    handles.R=handles.Img;
-    handles.G=handles.Img;
-    handles.B=handles.Img;
-%     handles.matFrame{handles.counter} =struct('PixelList',[]);
+    handles.counter = f_idx;
+    handles.Img=handles.raw{handles.counter};
     guidata(hObject, handles);
     
-    axes(handles.axes1);
-    imshow(handles.rawEachFrame{handles.counter}); 
+    axes(handles.fig);
+    imshow(handles.rgb{handles.counter}); 
     
     set(gcf,'WindowButtonDownFcn',{@figure1_WindowButtonDownFcn,handles});
+    set(gcf,'WindowButtonMotionFcn',{@figure1_WindowButtonMotionFcn,handles});
     set(gcf,'WindowButtonUpFcn',{@figure1_WindowButtonUpFcn,handles});
 end
-% Hints: get(hObject,'String') returns contents of GoToFrame as text
-%        str2double(get(hObject,'String')) returns contents of GoToFrame as a double
 
 
-% --- Executes during object creation, after setting all properties.
-function GoToFrame_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to GoToFrame (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
- 
 % --- Executes on button press in Mark.
 function Mark_Callback(hObject, eventdata, handles)
 % hObject    handle to Mark (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 global Aflag Dflag;
+
+handles=guidata(hObject);
+if(~isfield(handles,'numLabel') || handles.numLabel<1)
+    msgbox('Please set a valid number of labels first');
+    set(handles.Mark,'Value',0);
+    return
+end
+
+if(~isfield(handles,'Maxindex'))
+    msgbox('load data first');
+    set(handles.Mark,'Value',0);
+    return
+end
+
 button_state=get(hObject,'Value');
 if button_state == get(hObject,'Max')
     Aflag=1;
@@ -350,6 +351,20 @@ function Delete_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 global Aflag Dflag;
+
+handles=guidata(hObject);
+if(~isfield(handles,'numLabel') || handles.numLabel<=0)
+    msgbox('set a valid number of labels first');
+    set(handles.Delete,'Value',0);
+    return
+end
+
+if(~isfield(handles,'Maxindex'))
+    msgbox('load data first');
+    set(handles.Delete,'Value',0);
+    return
+end
+
 button_state=get(hObject,'Value');
 if button_state == get(hObject,'Max')
     Aflag=0;
@@ -363,8 +378,8 @@ guidata(hObject, handles);
 
 
 % --- Executes during object creation, after setting all properties.
-function axes1_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to axes1 (see GCBO)
+function fig_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to fig (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 global Aflag Dflag flag;
@@ -372,12 +387,8 @@ global Aflag Dflag flag;
 Aflag = 0;
 Dflag = 0;
 flag = 0;
-% Saveflag = 1;
-% handles.PixelList = [];
 handles.cmap=[1,0,0;0,1,0;0,0,1;1,1,0;1,0,1;0,1,1;1,1,1];
 guidata(hObject, handles);
-
-% Hint: place code in OpeningFcn to populate axes1
 
 
 % --- Executes on mouse press over figure background, over a disabled or
@@ -386,22 +397,71 @@ function figure1_WindowButtonDownFcn(hObject, eventdata, handles)
 % hObject    handle to axes2 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-global flag;
+global flag Aflag Dflag x y lock_up;
 
-handles = guidata(hObject);
-cp = get(handles.axes1, 'CurrentPoint');
-x = round(cp(1,1));
-y = round(cp(1,2));
+if(~lock_up)
 
-if(x>=1 && y>=1 && x<=handles.ydim && y<=handles.xdim)
-    flag = 1;
-    NewPixel = sub2ind(size(handles.Img),y,x);
-    handles.NewPixel = NewPixel;
-    handles.x = x;
-    handles.y = y;
-    guidata(hObject,handles);
-else
-    msgbox('Please choose pixels in figure')
+    if(Aflag || Dflag)
+        handles = guidata(hObject);
+        cp = get(handles.fig, 'CurrentPoint');
+        x = round(cp(1,1));
+        y = round(cp(1,2));
+        
+        if(x>=1 && y>=1 && x<=handles.ydim && y<=handles.xdim)
+            flag = 1;
+            NewPixel = sub2ind(size(handles.Img),y,x);
+            handles.NewPixel = NewPixel;
+            NImg=zeros(handles.xdim,handles.ydim);
+            NImg(y,x)=1;
+            handles.NImg = NImg;
+            guidata(hObject,handles);
+        end
+    end
+
+end
+
+
+% --- Executes on mouse motion over figure - except title and menu.
+function figure1_WindowButtonMotionFcn(hObject, eventdata, handles)
+% hObject    handle to Fig_seg (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+global Aflag flag Dflag CLable x0 y0 x y; 
+
+if flag
+    %%%% set the current point as (x0,y0), preparing for following
+    %%%% button motion drawing
+    x0 = x;
+    y0 = y;
+    
+    handles = guidata(hObject);
+    
+    cp = get(handles.fig, 'CurrentPoint');
+    x = round(cp(1,1));
+    y = round(cp(1,2));
+
+    [xp, yp]=bresenham(x0,y0,x,y);
+    if((~any(xp<1)) && (~any(xp>handles.ydim)) && (~any(yp<1)) &&(~any(yp>handles.xdim)))    
+        % notice that x-y is reversed in plot 
+        ind = sub2ind([handles.xdim,handles.ydim],yp,xp);
+        
+        LineWidthPlot=handles.Brush;
+
+        NImg = handles.NImg;
+        NImg(ind)=1;
+        handles.NImg = handles.NImg | NImg;
+        guidata(hObject, handles);
+        
+        if Aflag
+            Color = handles.cmap(CLable,:);
+            plot(handles.fig, [x0 x], [y0 y], 'LineWidth', LineWidthPlot, 'Color', Color);
+            drawnow;
+        elseif Dflag
+            Color = [0,0,0];
+            plot(handles.fig, [x0 x], [y0 y], 'LineWidth', LineWidthPlot, 'Color', Color);
+            drawnow;         
+        end
+    end
 end
 
 
@@ -411,80 +471,91 @@ function figure1_WindowButtonUpFcn(hObject, eventdata, handles)
 % hObject    handle to axes2 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-global CLable Aflag Dflag flag;
+global CLable Aflag Dflag flag lock_up;
 
-NImg = zeros(handles.xdim,handles.ydim); 
 if flag
+    flag=0;
+    lock_up=1;
     % retrieve the lastest handles
     handles = guidata(hObject);
-    NImg(handles.NewPixel) = 1;
-    R = round(get(handles.slider,'Value'))+1;
-    se = strel('disk',R,0);
-    NImg=imdilate(NImg,se);
-    ind = find(NImg>0);
-    % if Aflag && any(handles.matFrame{handles.counter}.PixelList(:))
-    if Aflag && any(ismember(ind,handles.matFrame{handles.counter}))
-        ind = setdiff(ind,handles.matFrame{handles.counter});
-        %if overlap with previous points, then cut those part
+    NImg = handles.NImg;
+    if(handles.Brush>1) 
+        se = strel('disk',(handles.Brush-1)/2,0);
+        NImg=imdilate(NImg,se);
     end
-    [xx,yy] = ind2sub(size(NImg),ind);
+    
+    ind = find(NImg>0);
+    
+    labelMat = handles.matFrame{handles.counter};
+    if Aflag && any(ismember(ind,labelMat>0))
+        ind = setdiff(ind,labelMat>0);
+        %if overlap with previous points, then exclude those pixels
+    end
+    
+    [xx,yy] = ind2sub([handles.xdim,handles.ydim],ind);
     sub = [xx,yy];
     temp = repmat([handles.counter],length(ind),1);
     NewList = cat(2,sub,temp);
-    
-    
-    if CLable<=handles.SetLable
-        if Aflag
-            handles=guidata(hObject);
-            handles.lable_inx{CLable}.PixelList = cat(1,handles.lable_inx{CLable}.PixelList,NewList);
-            guidata(hObject,handles);
-            
-            handles.R(ind)=handles.cmap(CLable,1);
-            handles.G(ind)=handles.cmap(CLable,2);
-            handles.B(ind)=handles.cmap(CLable,3);
-            RGB=cat(3,handles.R,handles.G,handles.B);
-            axes(handles.axes1);
-            imshow(RGB);
-            handles.RGB = RGB;
-            handles.rawEachFrame{handles.counter} = RGB;
-            guidata(hObject,handles);
-            
-            %         handles.matFrame{handles.counter}.figure(ind) = CLable;
-            handles.matFrame{handles.counter} = cat(1,handles.matFrame{handles.counter},ind);
-            guidata(hObject,handles);
-            
-        elseif Dflag
-            r = handles.RGB(handles.y,handles.x,1);
-            g = handles.RGB(handles.y,handles.x,2);
-            b = handles.RGB(handles.y,handles.x,3);
-            if r==handles.cmap(CLable,1)&&g==handles.cmap(CLable,2)&&b==handles.cmap(CLable,3)
-                handles.lable_inx{CLable}.PixelList = setdiff(handles.lable_inx{CLable}.PixelList,NewList);
-                guidata(hObject,handles);
-                
-                for i=1:1:length(ind)
-                    value = handles.raw{handles.counter}(ind(i));
-                    handles.R(ind(i))=value;
-                    handles.G(ind(i))=value;
-                    handles.B(ind(i))=value;
-                    guidata(hObject,handles);
+
+    if Aflag
+        handles.label_idx{CLable} = cat(1,handles.label_idx{CLable},NewList);
+        
+        rgb=handles.rgb{handles.counter};
+        r=rgb(:,:,1); r(ind)=handles.cmap(CLable,1);
+        g=rgb(:,:,2); g(ind)=handles.cmap(CLable,2);
+        b=rgb(:,:,3); b(ind)=handles.cmap(CLable,3);   
+        rgb=cat(3,r,g,b);
+        handles.rgb{handles.counter} = rgb;
+        
+        labelMat(ind)=CLable;
+        handles.matFrame{handles.counter} = labelMat;
+    elseif Dflag
+        rgb = handles.rgb{handles.counter};
+        r = rgb(:,:,1);
+        g = rgb(:,:,2);
+        b = rgb(:,:,3);
+        
+        for i=1:1:numel(ind)
+            c_idx = labelMat(ind(i));
+            if(c_idx>0) %%%% need to be removed
+                %%%% update labelMat
+                labelMat(ind(i))=0;
+                %%%% update rgb
+                value = handles.raw{handles.counter}(ind(i));
+                r(ind(i))=value;
+                g(ind(i))=value;
+                b(ind(i))=value;
+                %%%% update pixel list
+                pixel_idx = handles.label_idx{c_idx};
+                ind1=find(pixel_idx(:,3)==handles.counter);
+                pixel_idx1=pixel_idx(ind1,:);
+                ind2=find(pixel_idx1(:,2)==yy(i));
+                pixel_idx2=pixel_idx1(ind2,:);
+                ind3=find(pixel_idx2(:,1)==xx(i));
+                if(~isempty(ind3))
+                    pixel_idx(ind1(ind2(ind3)),:)=[];
+                    handles.label_idx{c_idx} = pixel_idx;
+                    clear pixel_idx pixel_idx1 pixel_idx2 ind1 ind2 ind3
+                else
+                    error('did not find');
                 end
-                RGB=cat(3,handles.R,handles.G,handles.B);
-                axes(handles.axes1);
-                imshow(RGB);
-                handles.RGB = RGB;
-                handles.rawEachFrame{handles.counter} = RGB;
-                
-                handles.matFrame{handles.counter} = setdiff(handles.matFrame{handles.counter},ind);
-                guidata(hObject,handles);
-            else
-                msgbox('Note: only to delete pixels on current lable')
             end
         end
-    else
-        msgbox('Notice: You current lable can not surpass your setting!')
+        rgb=cat(3,r,g,b);
+        handles.rgb{handles.counter}=rgb;
+        handles.matFrame{handles.counter}=labelMat;        
     end
+    guidata(hObject,handles);
+    
+    axes(handles.fig);
+    imshow(rgb);
+    
+    set(gcf,'WindowButtonDownFcn',{@figure1_WindowButtonDownFcn,handles});
+    set(gcf,'WindowButtonMotionFcn',{@figure1_WindowButtonMotionFcn,handles});
+    set(gcf,'WindowButtonUpFcn',{@figure1_WindowButtonUpFcn,handles});
+    
+    lock_up=0;
 end
-guidata(hObject, handles);
 
 
 % --- Executes on slider movement.
@@ -492,45 +563,13 @@ function slider_Callback(hObject, eventdata, handles)
 % hObject    handle to slider (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-x=round(get(hObject,'Value')) + 1;
-set(handles.edit3,'String',[num2str(x)]);
+handles=guidata(hObject);
+x=round(get(hObject,'Value'));
+handles.Brush = 2*x+1;
+set(handles.edit3,'String',num2str(handles.Brush));
+guidata(hObject, handles);
 % Hints: get(hObject,'Value') returns position of slider
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
-
-
-% --- Executes during object creation, after setting all properties.
-function slider_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to slider (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: slider controls usually have a light gray background.
-if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor',[.9 .9 .9]);
-end
-
-
-
-function edit3_Callback(hObject, eventdata, handles)
-% hObject    handle to edit3 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit3 as text
-%        str2double(get(hObject,'String')) returns contents of edit3 as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function edit3_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit3 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
 
 
 % --- Executes on button press in Save.
@@ -538,19 +577,36 @@ function Save_Callback(hObject, eventdata, handles)
 % hObject    handle to Save (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-choice = questdlg('Are you sure to save the present LablePixelList? ', ...
-	'Save', ...
-	'Yes,please go on.','No, I will do some fixing.','No, I will do some fixing.');
 
-switch choice
-    case 'Yes,please go on.'
-        handles=guidata(hObject);
-        lable_index=handles.lable_inx;
-        FileName = 'lable_index.mat';
-        save(FileName,'lable_index');
-        msgbox('save successfully','Infor');
-        guidata(hObject, handles);
-    case 'No, I will do some fixing.'
-        return;
+handles=guidata(hObject);
+if(~isfield(handles,'Maxindex') || ~isfield(handles,'label_idx'))
+    return
 end
 
+emptyFlag=1;
+for i=1:1:handles.numLabel
+    if(~isempty(handles.label_idx{i}))
+        emptyFlag=0;
+        break;
+    end
+end
+
+if(emptyFlag)
+    msgbox('No annotation has been made. No need to save');
+    return
+end
+
+choice = questdlg('Are you sure to save the present LablePixelList? ', ...
+	'Save', ...
+	'Yes','No, I will make more changes.','No, I will make more changes.');
+
+switch choice
+    case 'Yes'
+        [FileName,PathName] = uiputfile('*.mat','Select output location');
+        label_index=handles.label_idx;
+        save([PathName,FileName],'label_index');
+        guidata(hObject, handles);
+        msgbox('save successfully','Infor');
+    case 'No, I will make more changes.'
+        return;
+end
