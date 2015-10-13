@@ -22,7 +22,7 @@ function varargout = Simpleone(varargin)
 
 % Edit the above text to modify the response to help Simpleone
 
-% Last Modified by GUIDE v2.5 09-Sep-2015 10:41:23
+% Last Modified by GUIDE v2.5 11-Oct-2015 10:13:45
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -181,9 +181,7 @@ function LoadData_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 [FileName,PathName] = uigetfile('*.mat','Select the MATLAB code file');
 
-if isequal(FileName,0)
-   msgbox('User selected Cancel');
-else
+if ~isequal(FileName,0)
     load([PathName,FileName],'rawEachFrame');
     handles = guidata(hObject);
     handles.raw = rawEachFrame;
@@ -609,4 +607,56 @@ switch choice
         msgbox('save successfully','Infor');
     case 'No, I will make more changes.'
         return;
+end
+
+
+% --- Executes on button press in load_labels.
+function load_labels_Callback(hObject, eventdata, handles)
+% hObject    handle to load_labels (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles = guidata(hObject);
+
+if(~isfield(handles,'Maxindex'))
+    msgbox('Load Data First');
+    return
+end
+
+[FileName,PathName] = uigetfile('*.mat','Select the MATLAB code file');
+
+if ~isequal(FileName,0)
+    S=load([PathName,FileName]);
+    if(~isfield(S,'label_index'))
+        msgbox('Pre-label should contain a variable named **label_index**.');
+        return
+    end
+    label_index = S.label_index;
+    handles.label_idx = label_index;
+    %%%%% update rgb (label) information of each pixel %%%%%%
+    num=numel(label_index);
+    handles.numLabel = num;
+    
+    for i=1:1:num
+        lab=label_index{i};
+        for j=1:1:numel(lab)/3
+            fid=lab(j,3);
+            if(fid<0 || fid>handles.Maxindex || lab(j,1)<0 || lab(j,2)<0 || lab(j,1)>handles.xdim || lab(j,2)>handles.ydim)
+                msgbox('Labels are not compatiable with current data' );
+                error('error occurs when loading pre-labels');
+            end
+            rgb=handles.rgb{fid};
+            rgb(lab(j,1),lab(j,2),:) = handles.cmap(i,:);
+            handles.rgb{fid} = rgb;
+        end
+    end 
+    guidata(hObject, handles);    
+    set(handles.SetLable,'String',num2str(num));
+
+    %%%% updatae visualization %%%%
+    axes(handles.fig);
+    imshow(handles.rgb{handles.counter}); 
+    
+    set(gcf,'WindowButtonDownFcn',{@figure1_WindowButtonDownFcn,handles});
+    set(gcf,'WindowButtonMotionFcn',{@figure1_WindowButtonMotionFcn,handles});
+    set(gcf,'WindowButtonUpFcn',{@figure1_WindowButtonUpFcn,handles});
 end
