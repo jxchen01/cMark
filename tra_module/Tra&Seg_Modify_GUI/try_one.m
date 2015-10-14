@@ -239,6 +239,17 @@ else
                 handles.counter2 = handles.counter1 + 1;
             end
             
+            set(handles.Postid,'String',[]);
+            set(handles.Postchild,'String',[]);
+            set(handles.Postparent,'String',[]);
+            set(handles.GotoFrame2,'String',num2str(handles.counter2));
+            
+            guidata(hObject, handles);
+    
+            %%%%% update visualization %%%%
+            axes(handles.axes2);
+            imshow(ind2rgb(handles.idEachFrame{1,handles.counter2} + 1, handles.colormap));
+            
         end
     end
 
@@ -278,6 +289,24 @@ else
     else    
         axes(handles.axes1);
         imshow(handles.idEachFrame{1,handles.counter1} + 1, handles.colormap);
+        if(handles.consecutive==1)
+            if(handles.counter1==1)
+                handles.counter2=2;
+            else
+                handles.counter2 = handles.counter1 + 1;
+            end
+            
+            set(handles.Postid,'String',[]);
+            set(handles.Postchild,'String',[]);
+            set(handles.Postparent,'String',[]);
+            set(handles.GotoFrame2,'String',num2str(handles.counter2));
+            
+            guidata(hObject, handles);
+            
+            %%%%% update visualization %%%%
+            axes(handles.axes2);
+            imshow(ind2rgb(handles.idEachFrame{1,handles.counter2} + 1, handles.colormap));
+        end
     end
     
     guidata(hObject, handles);
@@ -321,6 +350,26 @@ else
     else
         axes(handles.axes1);
         imshow(ind2rgb(handles.idEachFrame{1,handles.counter1} + 1,handles.colormap));
+        if(handles.consecutive==1)
+            if(handles.counter1==1)
+                handles.counter2=2;
+            elseif(handles.counter1==handles.Maxindex)
+                handles.counter2=handles.Maxindex;
+            else
+                handles.counter2 = handles.counter1 + 1;
+            end
+            
+            set(handles.Postid,'String',[]);
+            set(handles.Postchild,'String',[]);
+            set(handles.Postparent,'String',[]);
+            set(handles.GotoFrame2,'String',num2str(handles.counter2));
+            
+            guidata(hObject, handles);
+            
+            %%%%% update visualization %%%%
+            axes(handles.axes2);
+            imshow(ind2rgb(handles.idEachFrame{1,handles.counter2} + 1, handles.colormap));
+        end
     end
     guidata(hObject, handles);
 end
