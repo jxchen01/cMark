@@ -879,10 +879,10 @@ end
 % suppose this is wrong, we want to swap the correspondence
 choice = questdlg('Would you like to delete the previous relation and give a new id to the intended cell?', ...
 	'Delete', ...
-	'Delete and give a new id','Cancel','Delete and give a new id');
+	'Delete','Cancel','Delete');
 % Handle response
 switch choice
-    case 'Delete and give a new id'
+    case 'Delete'
         
         if(handles.cellEachFrame{1, handles.counter1}{1, handles.preidx}.id ~=...
             handles.cellEachFrame{1, handles.counter2}{1, handles.idx}.id)
@@ -893,8 +893,8 @@ switch choice
         Postparent = handles.cellEachFrame{1, handles.counter2}{1, handles.idx}.parent;
         Prechild = handles.cellEachFrame{1,handles.counter1}{1,handles.preidx}.child;
         
-        Cindex = Prechild(:,2) >= handles.idx & Prechild(:,2) <= handles.idx;
-        Pindex = Postparent(:,2) >= handles.preidx & Postparent(:,2) <= handles.preidx;
+        Cindex = find(Prechild(:,2) == handles.idx);
+        Pindex = find(Postparent(:,2) == handles.preidx); 
         if(isempty(Cindex) || isempty(Pindex))
             msgbox('The selected two cells have no relationship to delete.');
             return
@@ -1583,12 +1583,14 @@ choice = questdlg('Are you sure to save the present work?', ...
 % Handle response
 switch choice
     case 'Yes,absolutely!'
+        [FileName,PathName] = uiputfile('*.mat','Select output location');
+        
         handles = guidata(hObject);
         cellEachFrame = handles.cellEachFrame;
         idEachFrame = handles.idEachFrame;
         matEachFrame = handles.matEachFrame;
         rawEachFrame = handles.rawEachFrame;
-        save(handles.FileName,'cellEachFrame','idEachFrame','matEachFrame','rawEachFrame');
+        save([PathName,FileName],'cellEachFrame','idEachFrame','matEachFrame','rawEachFrame');
         msgbox('save successfully ^_^','Infor');
         guidata(hObject, handles);
     case 'No'
