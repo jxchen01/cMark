@@ -610,12 +610,10 @@ else
     temp = handles.preidx;
     Preid = num2str(handles.cellEachFrame{1,handles.counter1}{1,temp}.id);
     Prechild = handles.cellEachFrame{1,handles.counter1}{1,temp}.child;
-    CSiz = size(Prechild);
-    handles.CSiz = CSiz(1);
+    handles.CSiz = numel(Prechild)/2;
     
     Preparent = handles.cellEachFrame{1,handles.counter1}{1,temp}.parent;
-    PSiz = size(Preparent);
-    handles.PSiz = PSiz(1);
+    handles.PSiz = numel(Preparent)/2;
     
     set(handles.Preid,'String',Preid);
     set(handles.Prechild,'String',handles.CSiz);
@@ -656,13 +654,11 @@ else
     temp = handles.idx;
     Postid = num2str(handles.cellEachFrame{1,handles.counter2}{1,temp}.id);
     Postchild = handles.cellEachFrame{1,handles.counter2}{1,temp}.child;
-    
-    CSiz = size(Postchild);
-    handles.CSiz2 = CSiz(1);
+
+    handles.CSiz2 = numel(Postchild)/2;
 
     Postparent = handles.cellEachFrame{1,handles.counter2}{1,temp}.parent;
-    PSiz = size(Postparent);
-    handles.PSiz2 = PSiz(1);
+    handles.PSiz2 = numel(Postparent)/2;
    
     set(handles.Postid,'String',Postid);
     set(handles.Postchild,'String',handles.CSiz2);
@@ -704,8 +700,8 @@ end
 Postparent = handles.cellEachFrame{1, handles.counter2}{1, handles.idx}.parent;
 Prechild = handles.cellEachFrame{1,handles.counter1}{1,handles.preidx}.child;
 
-ppnum = size(Postparent,1);
-pcnum = size(Prechild,1);
+ppnum = numel(Postparent)/2;
+pcnum = numel(Prechild)/2;
 
 if(ppnum>0 || pcnum>0)
     choice = questdlg('Other relationship exists. Want to combine?', ...
@@ -900,8 +896,8 @@ switch choice
             return
         end
         
-        ppnum = size(Postparent,1);
-        pcnum = size(Prechild,1);
+        ppnum = numel(Postparent)/2;
+        pcnum = numel(Prechild)/2;
         
         if(~isempty(handles.reusable))
             newidx = handles.reusable(end);
