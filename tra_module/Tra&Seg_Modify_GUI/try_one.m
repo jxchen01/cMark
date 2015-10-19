@@ -140,6 +140,15 @@ else
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%%%% key variables for the whole program %%%%%%
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   maxID=0;
+   for i=1:1:numel(idEachFrame)
+       tmpID = max(idEachFrame{i}(:));
+       if(tmpID>maxID)
+           maxID=tmpID;
+       end
+   end
+   handles.maxID=maxID;
+   
    handles.FileName = [PathName,FileName];  
    handles.action = 0;
    handles.action2 = 0;
@@ -375,7 +384,6 @@ else
 end
 
 
-% --- Executes on button press in Gonext2.
 function Gonext2_Callback(hObject, eventdata, handles)
 % hObject    handle to Gonext2 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -389,7 +397,7 @@ end
 
 if handles.counter2 == handles.Maxindex
     msgbox('Already in the last frame','Error','error')
-else
+else   
     handles.action2 = 0;
     handles.counter2 = handles.counter2 + 1;
     set(handles.Postid,'String',[]);
@@ -398,28 +406,38 @@ else
     set(handles.GotoFrame2,'String',num2str(handles.counter2));
     guidata(hObject, handles);
     
-    %%%% update visualization %%%%
-    axes(handles.axes2);
-    imshow(ind2rgb(handles.idEachFrame{1,handles.counter2} + 1, handles.colormap));
-    
-    if(Segflag==1)
+    if(~Segflag)
+        %%%% update visualization %%%%
+        axes(handles.axes2);
+        imshow(ind2rgb(handles.idEachFrame{1,handles.counter2} + 1, handles.colormap));
+        
+    else
+        %%%% prepare for segmentation correction %%%%
+        handles.Img=handles.matEachFrame{1,handles.counter2};
+        handles.idImg = handles.idEachFrame{1, handles.counter2};
+        handles.cList=handles.cellEachFrame{1,handles.counter2};
+        handles.raw=handles.rawEachFrame{1,handles.counter2};
+        
+        guidata(hObject, handles);
+        
+        axes(handles.axes2);
+        imshow(handles.raw);
+        hold on
+        h=imshow(ind2rgb(handles.Img,handles.colormap));
+        hold off
+        alpha=0.55.*ones(handles.xdim,handles.ydim);
+        set(h,'AlphaData',alpha);
+        
+        set(gca,'NextPlot','add');
         %%%% prepare for segmentation correction
         set(gcf,'WindowButtonDownFcn',{@figure2_WindowButtonDownFcn,handles});
         set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
         set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});
-        set(gca,'NextPlot','replace');
-        
-        handles.Img=handles.matEachFrame{1,handles.counter2};
-        handles.idImg = handles.idEachFrame{1,handles.counter2};
-        handles.cList=handles.cellEachFrame{1,handles.counter2};
-        
-        guidata(hObject, handles);
     end
     
 end
 
 
-% --- Executes on button press in Goback2.
 function Goback2_Callback(hObject, eventdata, handles)
 % hObject    handle to Goback2 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -432,7 +450,7 @@ end
 
 if handles.counter2 == 1
     msgbox('Already in the first frame','Error','error') 
-else
+else  
     handles.action2 = 0;
     handles.counter2 = handles.counter2 - 1;
     set(handles.Postid,'String',[]);
@@ -440,22 +458,33 @@ else
     set(handles.Postparent,'String',[]);
     set(handles.GotoFrame2,'String',num2str(handles.counter2));
     guidata(hObject, handles);
-    
-    %%%%% update visualization %%%%
-    axes(handles.axes2);
-    imshow(ind2rgb(handles.idEachFrame{1,handles.counter2} + 1, handles.colormap));
+    if(~Segflag)    
+        %%%%% update visualization %%%%
+        axes(handles.axes2);
+        imshow(ind2rgb(handles.idEachFrame{1,handles.counter2} + 1, handles.colormap));
 
-    if(Segflag)
-        %%%%% prepare for segmentation correction %%%%%
-        set(gcf,'WindowButtonDownFcn',{@figure2_WindowButtonDownFcn,handles});
-        set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
-        set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});
-        
+    else
+        %%%% prepare for segmentation correction %%%%
         handles.Img=handles.matEachFrame{1,handles.counter2};
         handles.idImg = handles.idEachFrame{1, handles.counter2};
         handles.cList=handles.cellEachFrame{1,handles.counter2};
+        handles.raw=handles.rawEachFrame{1,handles.counter2};
         
         guidata(hObject, handles);
+        
+        axes(handles.axes2);
+        imshow(handles.raw);
+        hold on
+        h=imshow(ind2rgb(handles.Img,handles.colormap));
+        hold off
+        alpha=0.55.*ones(handles.xdim,handles.ydim);
+        set(h,'AlphaData',alpha);
+        
+        set(gca,'NextPlot','add');
+        %%%% prepare for segmentation correction
+        set(gcf,'WindowButtonDownFcn',{@figure2_WindowButtonDownFcn,handles});
+        set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
+        set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});
     end
 end
 
@@ -479,27 +508,39 @@ idxFrame = str2double(val);
 if idxFrame < 1 || idxFrame > handles.Maxindex
     msgbox(['Invalide index, the max index value is ',num2str(handles.Maxindex)],'Error','error');
 else
-    handles.action2 = 0;
-    handles.counter2 = idxFrame;
-    set(handles.Postid,'String',[]);
-    set(handles.Postchild,'String',[]);
-    set(handles.Postparent,'String',[]);
-    guidata(hObject, handles);
-    
-    %%%% update visualization %%%%
-    axes(handles.axes2);
-    imshow(ind2rgb(handles.idEachFrame{1,handles.counter2} + 1,handles.colormap));
+        handles.action2 = 0;
+        handles.counter2 = idxFrame;
+        set(handles.Postid,'String',[]);
+        set(handles.Postchild,'String',[]);
+        set(handles.Postparent,'String',[]);
+        guidata(hObject, handles);
+    if(~Segflag)  
+        %%%% update visualization %%%%
+        axes(handles.axes2);
+        imshow(ind2rgb(handles.idEachFrame{1,handles.counter2} + 1,handles.colormap));
  
-    if(Segflag)
+    else
         %%%% prepare for segmentation correction %%%%
-        set(gcf,'WindowButtonDownFcn',{@figure2_WindowButtonDownFcn,handles});
-        set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
-        set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});
-        
         handles.Img=handles.matEachFrame{1,handles.counter2};
         handles.idImg = handles.idEachFrame{1, handles.counter2};
         handles.cList=handles.cellEachFrame{1,handles.counter2};
+        handles.raw=handles.rawEachFrame{1,handles.counter2};
+        
         guidata(hObject, handles);
+        
+        axes(handles.axes2);
+        imshow(handles.raw);
+        hold on
+        h=imshow(ind2rgb(handles.Img,handles.colormap));
+        hold off
+        alpha=0.55.*ones(handles.xdim,handles.ydim);
+        set(h,'AlphaData',alpha);
+        
+        set(gca,'NextPlot','add');
+        %%%% prepare for segmentation correction
+        set(gcf,'WindowButtonDownFcn',{@figure2_WindowButtonDownFcn,handles});
+        set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
+        set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});
     end
 end
 
@@ -1069,7 +1110,12 @@ if(x>=1 && y>=1 && x<=handles.ydim && y<=handles.xdim) % notice that x-y is reve
         if(idx_rm>0)
             max_id = numel(handles.cList);
             cList = handles.cList;
-            cImg(ismember(cImg,idx_rm))=0;
+            to_rm = ismember(cImg,idx_rm);
+            cImg(to_rm)=0;
+            handles.idImg(to_rm)=0;
+            %idImgNew = handles.idImg;
+            %idImgNew(to_rm)=0;
+            %handles.idImg=idImgNew;
             for i=idx_rm+1:1:max_id
                 cImg(ismember(cImg,i))=i-1;
                 cList{i-1}=cList{i};
@@ -1077,6 +1123,7 @@ if(x>=1 && y>=1 && x<=handles.ydim && y<=handles.xdim) % notice that x-y is reve
             cList(max_id)=[];
             handles.cList = cList;
             handles.Img = cImg;
+            
             guidata(hObject, handles);
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1097,9 +1144,6 @@ if(x>=1 && y>=1 && x<=handles.ydim && y<=handles.xdim) % notice that x-y is reve
             set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});
             
             clear h
-            
-%             axes(handles.Fig_raw);
-%             imshow(handles.raw);
         end
     end    
 else
@@ -1148,9 +1192,7 @@ if (Segflag && Mflag)
             
             if(isZoomed)
                 new_xx = get(gca,'XLim');
-                %new_yy = get(gca,'YLim');
-                %disp([(new_xx(2)-new_xx(1))/origInfo.XLim(2),(new_yy(2)-new_yy(1))/origInfo.YLim(2)])
-                
+               
                 rr = origInfo.XLim(2)/(new_xx(2)-new_xx(1)) ;
                 r0 = (handles.Brush-1)/2;
                 
@@ -1160,16 +1202,15 @@ if (Segflag && Mflag)
         end
         
         handles.NImg(ind)=1;
-%         NImg=zeros(handles.xdim,handles.ydim);
-%         NImg(ind)=1;
-%         se = strel('disk',LineWidth,0);
-%         NImg=imdilate(NImg,se);
-%         handles.NImg = handles.NImg | NImg;
         guidata(hObject, handles);
         
         if Aflag
             Saveflag = 0;
-            plot(handles.axes2, [x0 x], [y0 y], 'LineWidth', LineWidthPlot, 'Color', 'r');
+            %disp(LineWidthPlot)
+            axes(handles.axes2);
+            set(gca,'NextPlot','add');
+            plot([x0 x], [y0 y], 'LineWidth', LineWidthPlot, 'Color', 'r');
+            %plot(handles.axes2, [x0 x], [y0 y], 'LineWidth', LineWidthPlot, 'Color', 'r');
             drawnow;
         elseif Fflag
             Saveflag = 0;
@@ -1212,7 +1253,9 @@ if (Segflag && Mflag)
         else
             max_id = 1 + numel(handles.cList);
             handles.Img(ind)=max_id; % update matrix 
-            handles.cList{1,max_id}=struct('seg',NImg,'size',numel(ind)); % update cell
+            handles.maxID = handles.maxID + 1;
+            handles.idImg(ind)=handles.maxID;
+            handles.cList{1,max_id}=struct('seg',NImg,'size',numel(ind),'id',handles.maxID,'child',[],'parent',[]); % update cell
         end
     elseif Fflag
         %Need User first choose the intend-to-fix cell, that's to say,
@@ -1225,60 +1268,77 @@ if (Segflag && Mflag)
             else
                 handles.Img(ind)=value;
                 tmp = ismember(handles.Img,value);
-                handles.cList{1,value}=struct('seg',tmp,'size',nnz(tmp));
+                handles.cList{1,value}=struct('seg',tmp,'size',nnz(tmp),...
+                    'id',handles.cList{1,value}.id,'child',handles.cList{1,value}.child,...
+                    'parent',handles.cList{1,value}.parent);
+                handles.idImg(ind)=handles.cList{1,value}.id;
             end
         end
         
     elseif Sflag
         cImg=handles.Img;
         cList=handles.cList;
-        NImg=handles.NImg;
         idx_modified = unique(nonzeros(cImg(NImg>0)));
-        cImg(NImg>0)=0;
         
-        empty_idx=[];
-        max_id = numel(handles.cList);
-        
-        for i=1:1:numel(idx_modified)
-            sRegion = ismember(cImg,idx_modified(i));
-            cc = bwconncomp(sRegion);
-            if(cc.NumObjects>0)
-                % not wholly erased
-                tmp=zeros(handles.xdim,handles.ydim);
-                tmp(cc.PixelIdxList{1})=1; %%% the first component adopts the old index
-                cList{idx_modified(i)} = struct('seg',tmp,'size',numel(cc.PixelIdxList{1}));
-                
-                if(cc.NumObjects>1) %%%% the remaining components will have new index
-                    % region is broken
-                    for j=2:1:cc.NumObjects
-                        max_id = max_id+1;
-                        % update mat
-                        cImg(cc.PixelIdxList{j})=max_id;
-                        % update cell
-                        tmp=zeros(handles.xdim,handles.ydim);
-                        tmp(cc.PixelIdxList{j})=1;
-                        cList{max_id}=struct('seg',tmp,'size',numel(cc.PixelIdxList{j}));
-                    end
-                end
+        if(numel(idx_modified)==1) 
+            cImg(NImg>0)=0;
+            rg=ismember(cImg,idx_modified);
+            cc=bwconncomp(rg);
+            if(cc.NumObjects~=1)
+                waitfor(msgbox('invalid region pruning'));
             else
-                cList{idx_modified(i)}=[];
-                empty_idx=cat(2,empty_idx,idx_modified(i));
+                handles.Img=cImg;
+                handles.cList{1,idx_modified}=struct('seg',rg,'size',nnz(cc.PixelIdxList{1}),...
+                    'id',handles.cList{1,idx_modified}.id,'child',handles.cList{1,idx_modified}.child,...
+                    'parent',handles.cList{1,idx_modified}.parent);
+                handles.cList = cList;
+                handles.idImg(NImg>0)=0;
             end
+            
+        else
+            waitfor(msgbox('invalid pruning'));
         end
-        
-        if(~isempty(empty_idx))
-            for i=1:1:numel(empty_idx)
-                idx_rm = empty_idx(i);
-                cList(idx_rm)=[];
-                for j=idx_rm+1:1:max_id
-                    cImg(ismember(cImg,j))=j-1;
-                end
-                max_id = max_id - 1;
-            end
-        end
-        
-        handles.Img=cImg;
-        handles.cList = cList;
+
+%         for i=1:1:numel(idx_modified)
+%             sRegion = ismember(cImg,idx_modified(i));
+%             cc = bwconncomp(sRegion);
+%             if(cc.NumObjects>0)
+%                 % not wholly erased
+%                 tmp=zeros(handles.xdim,handles.ydim);
+%                 tmp(cc.PixelIdxList{1})=1; %%% the first component adopts the old index
+%                 cList{idx_modified(i)} = struct('seg',tmp,'size',numel(cc.PixelIdxList{1}),);
+%                 
+%                 if(cc.NumObjects>1) %%%% the remaining components will have new index
+%                     % region is broken
+%                     for j=2:1:cc.NumObjects
+%                         max_id = max_id+1;
+%                         % update mat
+%                         cImg(cc.PixelIdxList{j})=max_id;
+%                         % update cell
+%                         tmp=zeros(handles.xdim,handles.ydim);
+%                         tmp(cc.PixelIdxList{j})=1;
+%                         cList{max_id}=struct('seg',tmp,'size',numel(cc.PixelIdxList{j}));
+%                     end
+%                 end
+%             else
+%                 cList{idx_modified(i)}=[];
+%                 empty_idx=cat(2,empty_idx,idx_modified(i));
+%             end
+%         end
+%         
+%         if(~isempty(empty_idx))
+%             for i=1:1:numel(empty_idx)
+%                 idx_rm = empty_idx(i);
+%                 cList(idx_rm)=[];
+%                 for j=idx_rm+1:1:max_id
+%                     cImg(ismember(cImg,j))=j-1;
+%                 end
+%                 max_id = max_id - 1;
+%             end
+%         end
+%        
+%         handles.Img=cImg;
+%         handles.cList = cList;
     end
     
     axes(handles.axes2);
@@ -1295,9 +1355,6 @@ if (Segflag && Mflag)
     
     clear h
     
-%    axes(handles.Fig_raw);
-%    imshow(handles.raw);
-
     guidata(hObject, handles);
 end
 
@@ -1382,18 +1439,28 @@ else
     handles.cList = handles.cellEachFrame{1,handles.counter2};
 end
 
+%guidata(hObject, handles);
+
+handles.Img=handles.matEachFrame{1,handles.counter2};
+handles.idImg = handles.idEachFrame{1,handles.counter2};
+handles.cList=handles.cellEachFrame{1,handles.counter2};
+handles.raw=handles.rawEachFrame{1,handles.counter2};
+
 guidata(hObject, handles);
 
 axes(handles.axes2);
-set(gca,'NextPlot','add');
-imshow(handles.idEachFrame{1,handles.counter2} + 1,handles.colormap);
-%freezeColors;
+imshow(handles.raw);
+hold on
+h=imshow(ind2rgb(handles.Img,handles.colormap));
+hold off
+alpha=0.55.*ones(handles.xdim,handles.ydim);
+set(h,'AlphaData',alpha);
 
+set(gca,'NextPlot','add');
+%%%% prepare for segmentation correction
 set(gcf,'WindowButtonDownFcn',{@figure2_WindowButtonDownFcn,handles});
 set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
 set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles});
-
-msgbox('save successfully','Infor');
 
 % --- Executes on selection change in seg.
 function seg_Callback(hObject, eventdata, handles)
@@ -1415,7 +1482,6 @@ val = get(hObject,'Value');
 switch str{val};
     case 'None'
         Segflag=0;
-        return
     case 'Add'
         Segflag=1;
         Aflag=1;
@@ -1458,11 +1524,22 @@ if(Segflag==1)
     alpha=0.55.*ones(handles.xdim,handles.ydim);
     set(h,'AlphaData',alpha);
 
-    set(handles.axes2,'NextPlot','add');
+    set(gca,'NextPlot','add');
     %%%% prepare for segmentation correction
     set(gcf,'WindowButtonDownFcn',{@figure2_WindowButtonDownFcn,handles});
     set(gcf,'WindowButtonMotionFcn',{@figure2_WindowButtonMotionFcn,handles});
     set(gcf,'WindowButtonUpFcn',{@figure2_WindowButtonUpFcn,handles}); 
+else
+    handles.action2 = 0;
+    set(handles.Postid,'String',[]);
+    set(handles.Postchild,'String',[]);
+    set(handles.Postparent,'String',[]);
+    guidata(hObject, handles);
+    
+    %%%% update visualization %%%%
+    axes(handles.axes2);
+    imshow(ind2rgb(handles.idEachFrame{1,handles.counter2} + 1,handles.colormap));
+    set(gca,'NextPlot','replace');
 end
 
 
